@@ -1,0 +1,77 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets?type=IT%20Equipment
+  method: GET
+  queryParams:
+    type: IT%20Equipment
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Wed, 28 Oct 2026 06:20:45 GMT
+    Content-Type: application/json
+    Content-Length: "1570"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "asset_name": "HP ProBook Laptop",
+          "asset_tag": "AST-004",
+          "category": "IT Equipment",
+          "createdAt": "2026-10-27T08:32:57.493349",
+          "createdBy": "system",
+          "id": 4,
+          "location": "Finance Department",
+          "purchase_cost": 65000,
+          "purchase_date": "2026-10-25",
+          "status": "Active",
+          "updatedAt": "2026-10-27T08:32:57.493353",
+          "updatedBy": "system"
+        },
+        {
+          "asset_name": "Lenova Laptop",
+          "asset_tag": "AST-005",
+          "category": "IT Equipment",
+          "createdAt": "2026-10-27T09:04:26.471178",
+          "createdBy": "system",
+          "id": 5,
+          "location": "Finance Department",
+          "purchase_cost": 67000,
+          "purchase_date": "2026-10-25",
+          "status": "Active",
+          "updatedAt": "2026-10-27T09:07:54.137341",
+          "updatedBy": "system"
+        },
+        {
+          "asset_name": "Dell Laptop",
+          "asset_tag": "AST-007",
+          "category": "IT Equipment",
+          "createdAt": "2026-10-27T09:50:18.482709",
+          "createdBy": "system",
+          "id": 7,
+          "location": "IT Department",
+          "purchase_cost": 69000,
+          "purchase_date": "2026-10-25",
+          "status": "Active",
+          "updatedAt": "2026-10-27T09:50:18.482754",
+          "updatedBy": "system"
+        },
+        {
+          "asset_name": "HP EliteBook Laptop",
+          "asset_tag": "AST-008",
+          "category": "IT Equipment",
+          "createdAt": "2026-10-28T06:17:52.999904",
+          "createdBy": "system",
+          "id": 8,
+          "location": "Finance Department",
+          "purchase_cost": 72000,
+          "purchase_date": "2026-10-28",
+          "status": "Active",
+          "updatedAt": "2026-10-28T06:17:52.999911",
+          "updatedBy": "system"
+        }
+      ]
+order: 1000

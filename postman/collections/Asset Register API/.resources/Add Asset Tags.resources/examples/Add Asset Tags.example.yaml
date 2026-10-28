@@ -1,0 +1,43 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets/4/tags
+  method: POST
+  body:
+    type: json
+    content: "\r
+
+      {\r
+
+      \  \"tags\": [\r
+
+      \    \"urgent\",\r
+
+      \    \"warranty\",\r
+
+      \    \"finance\"\r
+
+      \  ]\r
+
+      }\r\n"
+response:
+  statusCode: 201
+  statusText: CREATED
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Wed, 28 Oct 2026 06:26:10 GMT
+    Content-Type: application/json
+    Content-Length: "121"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "asset_id": 4,
+        "message": "Tags added successfully",
+        "tags": [
+          "urgent",
+          "warranty",
+          "finance"
+        ]
+      }
+order: 1000

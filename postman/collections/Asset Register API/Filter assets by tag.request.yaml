@@ -1,0 +1,7 @@
+$kind: http-request
+url: //127.0.0.1:5000/assets?tag=urgent
+method: GET
+queryParams:
+  tag: urgent
+examples: .resources/Filter assets by tag.resources/examples
+order: 5000
