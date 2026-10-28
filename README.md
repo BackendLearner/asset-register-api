@@ -22,7 +22,6 @@ python-dotenv
 Postman
 Git and GitHub
 Project Structure
-text
 asset-register-api/
 ├── app.py
 ├── models.py
@@ -33,6 +32,7 @@ asset-register-api/
 ├── README.md
 └── postman/
     └── Asset-Register-API.postman_collection.json
+
 
 
 The postman/ directory and collection file should be added when you export your Postman collection.

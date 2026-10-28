@@ -1,0 +1,22 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets/7
+  method: DELETE
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Wed, 28 Oct 2026 06:33:03 GMT
+    Content-Type: application/json
+    Content-Length: "85"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "id": 7,
+        "message": "Asset deactivated successfully",
+        "status": "Inactive"
+      }
+order: 1000

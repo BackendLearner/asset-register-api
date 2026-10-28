@@ -1,0 +1,5 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets
+method: GET
+examples: .resources/Get assests.resources/examples
+order: 1000

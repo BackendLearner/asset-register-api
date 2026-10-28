@@ -1,0 +1,5 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets/7
+method: DELETE
+examples: .resources/Deactive asset.resources/examples
+order: 9000

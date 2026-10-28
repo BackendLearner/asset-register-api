@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets?type=IT%20Equipment
+method: GET
+queryParams:
+  type: IT%20Equipment
+examples: .resources/Filter assets by type or tag.resources/examples
+order: 4000

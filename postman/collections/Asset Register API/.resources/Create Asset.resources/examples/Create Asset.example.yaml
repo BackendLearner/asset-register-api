@@ -1,0 +1,50 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets
+  method: POST
+  body:
+    type: json
+    content: "\r
+
+      {\r
+
+      \  \"asset_name\": \"HP EliteBook Laptop\",\r
+
+      \  \"asset_tag\": \"AST-008\",\r
+
+      \  \"category\": \"IT Equipment\",\r
+
+      \  \"location\": \"Finance Department\",\r
+
+      \  \"purchase_date\": \"2026-10-28\",\r
+
+      \  \"purchase_cost\": 72000\r
+
+      }\r\n"
+response:
+  statusCode: 201
+  statusText: CREATED
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Wed, 28 Oct 2026 06:17:53 GMT
+    Content-Type: application/json
+    Content-Length: "368"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "asset_name": "HP EliteBook Laptop",
+        "asset_tag": "AST-008",
+        "category": "IT Equipment",
+        "createdAt": "2026-10-28T06:17:52.999904",
+        "createdBy": "system",
+        "id": 8,
+        "location": "Finance Department",
+        "purchase_cost": 72000,
+        "purchase_date": "2026-10-28",
+        "status": "Active",
+        "updatedAt": "2026-10-28T06:17:52.999911",
+        "updatedBy": "system"
+      }
+order: 1000

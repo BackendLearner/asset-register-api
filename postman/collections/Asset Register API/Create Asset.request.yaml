@@ -1,0 +1,24 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets
+method: POST
+body:
+  type: json
+  content: "\r
+
+    {\r
+
+    \  \"asset_name\": \"HP EliteBook Laptop\",\r
+
+    \  \"asset_tag\": \"AST-008\",\r
+
+    \  \"category\": \"IT Equipment\",\r
+
+    \  \"location\": \"Finance Department\",\r
+
+    \  \"purchase_date\": \"2026-10-28\",\r
+
+    \  \"purchase_cost\": 72000\r
+
+    }\r\n"
+examples: .resources/Create Asset.resources/examples
+order: 3000
