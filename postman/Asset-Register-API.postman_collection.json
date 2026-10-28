@@ -35,7 +35,26 @@
             }
           }
         }
-      }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", () => {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Created asset has an ID and Active status\", () => {",
+              "    const data = pm.response.json();",
+              "    pm.expect(data.id).to.exist;",
+              "    pm.expect(data.status).to.eql(\"Active\");",
+              "});"
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "Get All Active Assets",

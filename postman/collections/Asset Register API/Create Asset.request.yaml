@@ -20,5 +20,25 @@ body:
     \  \"purchase_cost\": 72000\r
 
     }\r\n"
+scripts:
+  - type: afterResponse
+    code: "pm.test(\"Status code is 201\", () => {\r
+
+      \    pm.response.to.have.status(201);\r
+
+      });\r
+
+      \r
+
+      pm.test(\"Created asset has an ID and Active status\", () => {\r
+
+      \    const data = pm.response.json();\r
+
+      \    pm.expect(data.id).to.exist;\r
+
+      \    pm.expect(data.status).to.eql(\"Active\");\r
+
+      });"
+    language: text/javascript
 examples: .resources/Create Asset.resources/examples
 order: 3000
