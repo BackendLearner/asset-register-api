@@ -194,8 +194,6 @@ def update_asset(asset_id):
 
 
 
-
-
 @app.route("/assets/<int:asset_id>", methods=["DELETE"])
 def delete_asset(asset_id):
     asset = db.session.get(Asset, asset_id)
