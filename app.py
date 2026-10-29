@@ -4,6 +4,7 @@ from datetime import date
 from models import db, Asset, AssetTag
 import os
 import math
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 load_dotenv()
 
@@ -54,7 +55,7 @@ def create_asset():
             return jsonify({"error": "purchase_cost must be a number"}), 400
         try:
             purchase_cost = float(purchase_cost)
-            if not __import__("math").isfinite(purchase_cost) or purchase_cost < 0:
+            if not math.isfinite(purchase_cost) or purchase_cost < 0:
                 raise ValueError
         except (ValueError, TypeError):
             return jsonify({
@@ -74,11 +75,26 @@ def create_asset():
     try:
         db.session.add(asset)
         db.session.commit()
-    except Exception:
+
+    except IntegrityError:
         db.session.rollback()
         return jsonify({
-            "error": "Could not create asset. Check that asset_tag is unique."
+            "error": "Asset could not be created due to a database constraint conflict."
         }), 409
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception("Database error while creating asset")
+        return jsonify({
+            "error": "A database error occurred while creating the asset."
+        }), 500
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Unexpected error while creating asset")
+        return jsonify({
+            "error": "An unexpected error occurred while creating asset."
+        }), 500
 
     return jsonify(asset.to_dict()), 201
 
@@ -125,8 +141,8 @@ def get_asset(asset_id):
 def update_asset(asset_id):
     asset = db.session.get(Asset, asset_id)
 
-    if asset is None or asset.status!= "Active":
-       return jsonify({"error": "Asset not found"}), 404
+    if asset is None or asset.status != "Active":
+        return jsonify({"error": "Asset not found"}), 404
 
     data = request.get_json(silent=True)
 
@@ -139,13 +155,17 @@ def update_asset(asset_id):
     }
 
     if not data or not set(data).issubset(allowed_fields):
-        return jsonify({"error": "Provide valid asset fields to update"}), 400
+        return jsonify({
+            "error": "Provide valid asset fields to update"
+        }), 400
 
     for field in ("asset_name", "asset_tag", "category"):
         if field in data and (
             not isinstance(data[field], str) or not data[field].strip()
         ):
-            return jsonify({"error": f"{field} cannot be empty"}), 400
+            return jsonify({
+                "error": f"{field} cannot be empty"
+            }), 400
 
     if "purchase_date" in data:
         try:
@@ -160,17 +180,24 @@ def update_asset(asset_id):
 
     if "purchase_cost" in data:
         cost = data["purchase_cost"]
+
         if cost is not None:
             if isinstance(cost, bool):
-                return jsonify({"error": "purchase_cost must be a number"}), 400
+                return jsonify({
+                    "error": "purchase_cost must be a number"
+                }), 400
+
             try:
                 cost = float(cost)
-                if not __import__("math").isfinite(cost) or cost < 0:
+
+                if not math.isfinite(cost) or cost < 0:
                     raise ValueError
+
             except (ValueError, TypeError):
                 return jsonify({
                     "error": "purchase_cost must be a non-negative number"
                 }), 400
+
         asset.purchase_cost = cost
 
     for field in ("asset_name", "asset_tag", "category"):
@@ -184,11 +211,30 @@ def update_asset(asset_id):
     try:
         asset.updatedBy = "system"
         db.session.commit()
-    except Exception:
+
+    except IntegrityError:
         db.session.rollback()
         return jsonify({
-            "error": "Could not update asset. Check that asset_tag is unique."
+            "error": "Asset update failed because of a database constraint conflict, such as a duplicate asset tag."
         }), 409
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        app.logger.exception(
+            "Database error while updating asset %s", asset_id
+        )
+        return jsonify({
+            "error": "A database error occurred while updating the asset."
+        }), 500
+
+    except Exception:
+        db.session.rollback()
+        app.logger.exception(
+            "Unexpected error while updating asset %s", asset_id
+        )
+        return jsonify({
+            "error": "An unexpected error occurred while updating the asset."
+        }), 500
 
     return jsonify(asset.to_dict()), 200
 
