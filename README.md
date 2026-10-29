@@ -1,19 +1,22 @@
 Asset Register API
 
-A REST API built using Python, Flask, Flask-SQLAlchemy, and SQLite to manage an organization's assets. The API supports creating, listing, filtering, retrieving, updating, tagging, and deactivating assets.
-
+A RESTful API built using Python, Flask, Flask-SQLAlchemy, SQLAlchemy, and SQLite to manage an organization's assets. The API supports creating, listing, filtering, retrieving, updating, tagging, and deactivating assets.
+_________________________________________________________________________________
 Features
 Create and manage assets.
 List all active assets.
 Filter assets by category and tag.
-Retrieve an asset by ID.
-Update existing assets.
+Retrieve an asset by its ID.
+Update existing asset details.
 Add tags to assets.
 Soft-delete assets by changing their status to Inactive.
-Store data in a SQLite database using SQLAlchemy.
-Track creation and modification timestamps and user fields.
+Store asset data in a SQLite database using SQLAlchemy.
+Track creation and modification timestamps and user information.
+Validate request data and return appropriate HTTP status codes.
+____________________________________________________________________________
+
 Technologies Used
-Python
+Python 3.10+
 Flask
 Flask-SQLAlchemy
 SQLAlchemy
@@ -22,6 +25,7 @@ python-dotenv
 Postman
 Git and GitHub
 Project Structure
+text
 asset-register-api/
 ├── app.py
 ├── models.py
@@ -33,13 +37,11 @@ asset-register-api/
 └── postman/
     └── Asset-Register-API.postman_collection.json
 
-
-
-The postman/ directory and collection file should be added when you export your Postman collection.
+_______________________________________________________________________________
 
 Prerequisites
 
-Install the following before running the project:
+Before running the project, ensure that you have installed:
 
 Python 3.10 or later
 Git
@@ -47,13 +49,16 @@ Visual Studio Code (recommended)
 Postman
 Installation and Setup
 1. Clone the repository
+
+Open a terminal and run:
+
 bash
 git clone https://github.com/BackendLearner/asset-register-api.git
 cd asset-register-api
 
 2. Create a virtual environment
 
-On Windows PowerShell:
+On Windows PowerShell, run:
 
 powershell
 python -m venv .venv
@@ -63,75 +68,92 @@ powershell
 .\.venv\Scripts\Activate.ps1
 
 
-If activation is successful, your terminal should show (.venv).
+After successful activation, your terminal should display (.venv).
+
+If PowerShell prevents script execution, use the following command for the current terminal session, if permitted:
+
+powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+
+Then activate the virtual environment again.
 
 4. Install dependencies
+
+Install the required Python packages:
+
 powershell
 python -m pip install -r requirements.txt
 
 
-Verify the dependencies:
+Verify that the installed packages have no dependency conflicts:
 
 powershell
 python -m pip check
 
 5. Configure environment variables
 
-Create a .env file in the project root:
+Create a .env file in the project root directory.
+
+Add the following configuration:
 
 env
 DATABASE_URL=sqlite:///assets.db
 
 
-The application uses assets.db by default if DATABASE_URL is not provided.
+The application uses assets.db by default if DATABASE_URL is not configured.
 
-Do not commit .env or database files to Git.
+Important: Do not commit your .env file or database files to Git. Keep sensitive configuration out of version control.
 
 6. Initialize the database
 
-Run:
+Run the application:
 
 powershell
 python app.py
 
 
-The application calls db.create_all() when started directly, creating tables that do not already exist.
+If the application calls db.create_all() when started directly, it will create any missing tables.
 
-For an existing database that needs the audit-column migration, stop the running server and execute:
+For an existing database that requires the audit-column migration, stop the application and run:
 
 powershell
 python migrate_db.py
 
 
-Run the migration only when required. It is designed to preserve existing records while adding missing columns.
+Run the migration only when required. It is intended to preserve existing records while adding missing columns.
 
 7. Start the API
 
-If you have not already started the server, run:
+If the application is not already running, execute:
 
 powershell
 python app.py
 
 
-The development server will normally be available at:
+The development server should be available at:
 
-http://127.0.0.1:5000
+Base URL: http://127.0.0.1:5000
 
-Keep the terminal running while testing requests.
+Keep the terminal open while testing the API.
 
 API Endpoints
 
-Set the base URL in Postman to:
+All endpoints use the following base URL:
 
+text
 http://127.0.0.1:5000
 
-All request bodies shown below use JSON. In Postman, select Body → raw → JSON for requests with a body.
+
+For requests with a body, select Body → raw → JSON in Postman and provide a valid JSON payload.
 
 1. Create an asset
 
-Method: POST
+Creates a new asset.
 
+Method: POST
 Endpoint: /assets
+Expected status: 201 Created
 
 Request body:
 
@@ -146,7 +168,18 @@ json
 }
 
 
-Expected status: 201 Created
+Required fields:
+
+asset_name
+asset_tag
+category
+
+Optional fields:
+
+location
+purchase_date
+purchase_cost
+status
 
 Example response:
 
@@ -167,23 +200,28 @@ json
 }
 
 
-Timestamps and IDs are generated by the application/database; the values above are illustrative.
+Note: The ID and timestamps are illustrative. Actual values are generated by the application or database.
 
-Required fields: asset_name, asset_tag, and category.
+Validation rules:
 
-Optional fields: location, purchase_date, purchase_cost, and status.
+The purchase date must use the YYYY-MM-DD format.
+The purchase cost must be non-negative.
+The asset_tag must be unique.
 
-The purchase date must use YYYY-MM-DD format, and the purchase cost must be non-negative.
 
 2. List all active assets
 
+Returns all assets whose status is Active.
+
 Method: GET
-
 Endpoint: /assets
-
-No request body is required.
-
 Expected status: 200 OK
+
+Example request:
+
+http
+GET /assets
+
 
 Example response:
 
@@ -205,76 +243,68 @@ json
   }
 ]
 
+The response contains an array of active assets. If no active assets exist, the API should return an empty array.
 
-Only assets whose status is Active are returned.
 
 3. Filter assets by category
 
-Method: GET
+Returns active assets belonging to a specified category.
 
+Method: GET
 Endpoint: /assets?type=IT%20Equipment
-
-This filters assets by the category field.
-
 Expected status: 200 OK
 
-Example response:
+Example request:
 
-json
-[
-  {
-    "id": 1,
-    "asset_name": "Dell Laptop",
-    "asset_tag": "LAP-001",
-    "category": "IT Equipment",
-    "location": "Office Room 101",
-    "purchase_date": "2026-01-15",
-    "purchase_cost": 65000.0,
-    "createdAt": "2026-10-28T10:00:00",
-    "updatedAt": "2026-10-28T10:00:00",
-    "createdBy": "system",
-    "updatedBy": "system",
-    "status": "Active"
-  }
-]
+http
+GET /assets?type=IT%20Equipment
 
 
-In Postman, you can alternatively enter the URL http://127.0.0.1:5000/assets and add a query parameter:
+Alternatively, in Postman, enter the URL:
 
-Key: type
-Value: IT Equipment
+text
+http://127.0.0.1:5000/assets
+
+
+Under the Params tab, add:
+
+Key	Value
+type	IT Equipment
+
+The response contains active assets matching the specified category.
+
 4. Filter assets by tag
-
-Method: GET
-
-Endpoint: /assets?tag=urgent
-
-Expected status: 200 OK
 
 Returns active assets associated with the specified active tag.
 
-Example request URL:
+Method: GET
+Endpoint: /assets?tag=urgent
+Expected status: 200 OK
 
-text
-http://127.0.0.1:5000/assets?tag=urgent
+Example request:
+
+http
+GET /assets?tag=urgent
 
 
-The response is an array of matching active assets. If there are no matches, the response is an empty array:
+The response contains an array of matching active assets.
+
+If no assets match the tag, the API returns an empty array:
 
 json
 []
 
-5. Retrieve one asset
+5. Retrieve an asset by ID
+
+Retrieves a single active asset using its ID.
 
 Method: GET
-
 Endpoint: /assets/1
-
-Replace 1 with the asset ID you want to retrieve.
-
 Expected status: 200 OK
 
-The response contains the asset object, including its audit fields and status.
+Replace 1 with the ID of the asset you want to retrieve.
+
+The response contains the asset details, including its audit fields and status.
 
 If the asset does not exist or has been deactivated, the API returns 404 Not Found.
 
@@ -287,9 +317,11 @@ json
 
 6. Update an asset
 
-Method: PUT
+Updates the specified fields of an existing active asset.
 
+Method: PUT
 Endpoint: /assets/1
+Expected status: 200 OK
 
 Request body:
 
@@ -300,19 +332,19 @@ json
 }
 
 
-Expected status: 200 OK
+The API updates the supplied fields and sets updatedBy to system, according to the current application behavior.
 
-The API updates the supplied fields and sets updatedBy to system.
-
-The response contains the updated asset object.
+The response contains the updated asset details.
 
 Only active assets can be updated.
 
 7. Add tags to an asset
 
-Method: POST
+Associates one or more tags with an existing active asset.
 
+Method: POST
 Endpoint: /assets/1/tags
+Expected status: 201 Created
 
 Request body:
 
@@ -325,8 +357,6 @@ json
   ]
 }
 
-
-Expected status: 201 Created
 
 Example response:
 
@@ -342,21 +372,22 @@ json
 }
 
 
-Tags must be provided as a non-empty list of non-empty strings. Existing active tags for the asset are not added again.
+Validation rules:
 
-Only active assets can receive new  tags.
+tags must be a non-empty list.
+Every tag must be a non-empty string.
+Existing active tags for the asset are not added again.
+Only active assets can receive new tags.
 
 8. Deactivate an asset
+
+Soft-deletes an asset by changing its status to Inactive.
+
 Method: DELETE
-
 Endpoint: /assets/1
-
-No request body is required.
-
 Expected status: 200 OK
 
 Example response:
-
 
 json
 {
@@ -364,25 +395,115 @@ json
   "id": 1,
   "status": "Inactive"
 }
-This is a soft delete. The asset's database row is retained, but its status is changed to Inactive.
+
+
+This operation does not permanently delete the database record. The asset remains stored with its status changed to Inactive.
 
 Deactivated assets are excluded from list and filter results and cannot be retrieved through the single-asset endpoint.
 
-Status	Meaning
-200 OK	Request completed successfully
-201 Created	Asset or tags created
-400 Bad Request	Invalid JSON or input
-404 Not Found	Asset does not exist or is inactive
-500 Internal Server Error	Unexpected server error
+HTTP Status Codes
+Status code	Description
+200 OK	Request completed successfully.
+201 Created	Asset or tags created successfully.
+400 Bad Request	Invalid JSON or input data.
+404 Not Found	Asset does not exist or is inactive.
+500 Internal Server Error	Unexpected server error.
+
+The actual status codes and error messages depend on the application's implemented error handling.
 
 Testing with Postman
-Start the Flask application.
+1. Import the Postman collection
+Start the Flask application using python app.py.
 Open Postman.
-Create a collection named Asset Register API.
-Add the eight requests documented above.
-Set the base URL to http://127.0.0.1:5000.
-Send each request and verify its response and HTTP status.
-Test invalid JSON, missing required fields, nonexistent IDs, and deactivated assets.
-Export the collection as a JSON file.
-Save the exported file to:
-postman/Asset-Register-API.postman_collection.json
+Select Import.
+Choose Files and select postman/Asset-Register-API.postman_collection.json.
+Import the collection into your workspace.
+Open the imported Asset Register API collection.
+Verify that the requests use http://127.0.0.1:5000 as the base URL.
+
+
+2. Test the endpoints
+
+Run the requests in the following order:
+Create Asset — POST /assets
+List Assets — GET /assets
+Filter Assets by Type — GET /assets?type=IT%20Equipment
+Filter Assets by Tag — GET /assets?tag=urgent
+Get Asset by ID — GET /assets/1
+Update Asset — PUT /assets/1
+Add Asset Tags — POST /assets/1/tags
+Deactivate Asset — DELETE /assets/1
+Get Asset by ID Again — verify that the deactivated asset returns 404 Not Found.
+
+Replace 1 with a valid asset ID from your database.
+
+Use a unique asset_tag when creating each new asset because the database requires asset tags to be unique.
+
+3. Test invalid requests
+
+Test the following scenarios to verify the API's validation and error handling:
+
+Creating an asset without required fields.
+Sending an invalid JSON request body.
+Providing an invalid purchase date.
+Providing a negative purchase cost.
+Creating an asset with a duplicate asset tag.
+Retrieving an asset using a nonexistent ID.
+Updating an inactive asset.
+Adding tags to an inactive asset.
+Retrieving an asset after deactivation.
+
+Verify that the returned HTTP status codes and JSON error messages match the implementation.
+
+Database and Audit Fields
+
+The application uses SQLite to store asset information.
+
+The asset records include audit fields for tracking creation and modification details:
+
+createdAt: Date and time when the asset was created.
+updatedAt: Date and time when the asset was last modified.
+createdBy: User who created the asset.
+updatedBy: User who last modified the asset.
+status: Current asset status, such as Active or Inactive.
+
+The example responses use system as the user value. This reflects the documented API behavior and does not imply authentication or individual user tracking.
+
+Git and GitHub
+
+Before committing your changes, ensure that generated files and local configuration are excluded from version control.
+
+Example .gitignore entries:
+
+gitignore
+.venv/
+__pycache__/
+*.py[cod]
+.env
+*.db
+instance/
+.pytest_cache/
+
+
+Review the rules before adding them to your project, especially if you intentionally need to version a database or other generated file.
+
+To commit and push your project:
+
+bash
+git add .
+git commit -m "Improve Asset Register API documentation"
+git push
+
+
+Future Improvements
+
+Possible enhancements include:
+Add authentication and role-based access control.
+Implement pagination for asset listing.
+Add automated unit and integration tests.
+Introduce structured logging and improved error handling.
+Add database migrations using Flask-Migrate.
+Support asset search and sorting.
+Add API documentation using Swagger or OpenAPI.
+
+
