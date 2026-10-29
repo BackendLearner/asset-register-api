@@ -68,7 +68,7 @@ def create_asset():
         location=data.get("location"),
         purchase_date=purchase_date,
         purchase_cost=purchase_cost,
-        status=data.get("status", "Active"),
+        status="Active",
     )
 
     try:
