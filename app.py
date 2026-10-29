@@ -2,9 +2,11 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from datetime import date
 from models import db, Asset, AssetTag
+from sqlalchemy.exc import IntegrityError
 import os
 import math
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+
 
 load_dotenv()
 
@@ -23,55 +25,126 @@ def home():
     return "Welcome to the Asset Register API!"
 
 
-@app.route("/hello")
-def hello():
-    return "Hello! Your API is working."
-
-
+# 1. Create assets
 @app.route("/assets", methods=["POST"])
 def create_asset():
     data = request.get_json(silent=True)
 
+    # 1. Validate request body
     if not isinstance(data, dict):
-        return jsonify({"error": "Request body must be valid JSON"}), 400
+        return jsonify({
+            "error": "Request body must be valid JSON"
+        }), 400
 
+    # 2. Validate required fields
     required_fields = ["asset_name", "asset_tag", "category"]
+
     for field in required_fields:
         if not isinstance(data.get(field), str) or not data[field].strip():
-            return jsonify({"error": f"{field} is required"}), 400
+            return jsonify({
+                "error": f"{field} is required and must be a non-empty string"
+            }), 400
 
+    # 3. Reject unexpected fields
+    allowed_fields = {
+        "asset_name", "asset_tag", "category",
+        "location", "purchase_date", "purchase_cost", "status"
+    }
+
+    unknown_fields = set(data) - allowed_fields
+
+    if unknown_fields:
+        return jsonify({
+            "error": "Unknown fields provided",
+            "fields": sorted(unknown_fields)
+        }), 400
+
+    # 4. Validate string lengths
+    max_lengths = {
+        "asset_name": 100,
+        "asset_tag": 50,
+        "category": 100,
+        "location": 100,
+        "status": 30,
+    }
+
+    for field, max_length in max_lengths.items():
+        value = data.get(field)
+
+        if value is not None:
+            if not isinstance(value, str):
+                return jsonify({
+                    "error": f"{field} must be a string"
+                }), 400
+
+            if len(value.strip()) > max_length:
+                return jsonify({
+                    "error": f"{field} must not exceed {max_length} characters"
+                }), 400
+
+    # 5. Validate status
+    status = data.get("status", "Active")
+
+    if status not in ("Active", "Inactive"):
+        return jsonify({
+            "error": "status must be Active or Inactive"
+        }), 400
+
+    # 6. Validate purchase date
     purchase_date = None
-    if data.get("purchase_date"):
-        try:
-            purchase_date = date.fromisoformat(data["purchase_date"])
-        except (ValueError, TypeError):
+
+    if data.get("purchase_date") not in (None, ""):
+        if not isinstance(data["purchase_date"], str):
             return jsonify({
                 "error": "purchase_date must use YYYY-MM-DD format"
             }), 400
 
+        try:
+            purchase_date = date.fromisoformat(data["purchase_date"])
+
+            if purchase_date.isoformat() != data["purchase_date"]:
+                raise ValueError
+
+        except ValueError:
+            return jsonify({
+                "error": "purchase_date must use YYYY-MM-DD format"
+            }), 400
+
+    #  Validate purchase cost
     purchase_cost = data.get("purchase_cost")
+
     if purchase_cost is not None:
         if isinstance(purchase_cost, bool):
-            return jsonify({"error": "purchase_cost must be a number"}), 400
+            return jsonify({
+                "error": "purchase_cost must be a number"
+            }), 400
+
         try:
             purchase_cost = float(purchase_cost)
             if not math.isfinite(purchase_cost) or purchase_cost < 0:
                 raise ValueError
+
         except (ValueError, TypeError):
             return jsonify({
-                "error": "purchase_cost must be a non-negative number"
+                "error": "purchase_cost must be a finite, non-negative number"
             }), 400
 
+    #  Create asset
     asset = Asset(
         asset_name=data["asset_name"].strip(),
         asset_tag=data["asset_tag"].strip(),
         category=data["category"].strip(),
-        location=data.get("location"),
+        location=(
+            data["location"].strip()
+            if data.get("location") is not None
+            else None
+        ),
         purchase_date=purchase_date,
         purchase_cost=purchase_cost,
         status="Active",
     )
 
+    # Save to database and handle errors
     try:
         db.session.add(asset)
         db.session.commit()
@@ -98,8 +171,11 @@ def create_asset():
 
     return jsonify(asset.to_dict()), 201
 
+    #  Return success response
+    return jsonify(asset.to_dict()), 201
 
 
+# 2. Get assets
 @app.route("/assets", methods=["GET"])
 def get_assets():
     query = Asset.query.filter_by(status="Active")
@@ -125,7 +201,7 @@ def get_assets():
     return jsonify([asset.to_dict() for asset in assets]), 200
 
 
-
+# 3. GET asset by Id
 @app.route("/assets/<int:asset_id>", methods=["GET"])
 def get_asset(asset_id):
     asset = db.session.get(Asset, asset_id)
@@ -136,19 +212,24 @@ def get_asset(asset_id):
     return jsonify(asset.to_dict()), 200
 
 
-
+# 4. Update assets by ID
 @app.route("/assets/<int:asset_id>", methods=["PUT"])
 def update_asset(asset_id):
+    # 1. Check whether asset exists and is active
     asset = db.session.get(Asset, asset_id)
 
     if asset is None or asset.status != "Active":
         return jsonify({"error": "Asset not found"}), 404
 
+    # 2. Validate request body
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
-        return jsonify({"error": "Request body must be valid JSON"}), 400
+        return jsonify({
+            "error": "Request body must be valid JSON"
+        }), 400
 
+    # 3. Validate allowed fields
     allowed_fields = {
         "asset_name", "asset_tag", "category",
         "location", "purchase_date", "purchase_cost", "status"
@@ -167,17 +248,80 @@ def update_asset(asset_id):
                 "error": f"{field} cannot be empty"
             }), 400
 
-    if "purchase_date" in data:
-        try:
-            asset.purchase_date = (
-                date.fromisoformat(data["purchase_date"])
-                if data["purchase_date"] else None
-            )
-        except (ValueError, TypeError):
+    if unknown_fields:
+        return jsonify({
+            "error": "Invalid fields provided",
+            "fields": sorted(unknown_fields)
+        }), 400
+
+    # 4. Validate required string fields when provided
+    required_string_fields = {
+        "asset_name": 100,
+        "asset_tag": 50,
+        "category": 100,
+    }
+
+    for field, max_length in required_string_fields.items():
+        if field in data:
+            value = data[field]
+
+            if not isinstance(value, str) or not value.strip():
+                return jsonify({
+                    "error": f"{field} cannot be empty and must be a string"
+                }), 400
+
+            if len(value.strip()) > max_length:
+                return jsonify({
+                    "error": f"{field} must not exceed {max_length} characters"
+                }), 400
+
+    # 5. Validate optional location
+    if "location" in data:
+        location = data["location"]
+
+        if location is not None and not isinstance(location, str):
             return jsonify({
-                "error": "purchase_date must use YYYY-MM-DD format"
+                "error": "location must be a string or null"
             }), 400
 
+        if isinstance(location, str) and len(location.strip()) > 100:
+            return jsonify({
+                "error": "location must not exceed 100 characters"
+            }), 400
+
+    # 6. Validate status
+    if "status" in data:
+        if data["status"] not in ("Active", "Inactive"):
+            return jsonify({
+                "error": "status must be Active or Inactive"
+            }), 400
+
+    # 7. Validate purchase date
+    if "purchase_date" in data:
+        purchase_date = data["purchase_date"]
+
+        if purchase_date is None or purchase_date == "":
+            asset.purchase_date = None
+        else:
+            if not isinstance(purchase_date, str):
+                return jsonify({
+                    "error": "purchase_date must use YYYY-MM-DD format"
+                }), 400
+
+            try:
+                parsed_date = date.fromisoformat(purchase_date)
+
+                if parsed_date.isoformat() != purchase_date:
+                    raise ValueError
+
+                asset.purchase_date = parsed_date
+
+            except ValueError:
+                return jsonify({
+                    "error": "purchase_date must use YYYY-MM-DD format"
+                }), 400
+
+    # 8. Validate purchase cost
     if "purchase_cost" in data:
         cost = data["purchase_cost"]
 
@@ -195,19 +339,27 @@ def update_asset(asset_id):
 
             except (ValueError, TypeError):
                 return jsonify({
-                    "error": "purchase_cost must be a non-negative number"
+                    "error": "purchase_cost must be a finite, non-negative number"
                 }), 400
 
         asset.purchase_cost = cost
 
+    # 9. Update validated fields
     for field in ("asset_name", "asset_tag", "category"):
         if field in data:
             setattr(asset, field, data[field].strip())
 
-    for field in ("location", "status"):
-        if field in data:
-            setattr(asset, field, data[field])
+    if "location" in data:
+        asset.location = (
+            data["location"].strip()
+            if data["location"] is not None
+            else None
+        )
 
+    if "status" in data:
+        asset.status = data["status"]
+
+    # 10. Save changes and handle database errors
     try:
         asset.updatedBy = "system"
         db.session.commit()
@@ -238,8 +390,11 @@ def update_asset(asset_id):
 
     return jsonify(asset.to_dict()), 200
 
+    # 11. Return updated asset
+    return jsonify(asset.to_dict()), 200
 
 
+# 5. Deactivate assets
 @app.route("/assets/<int:asset_id>", methods=["DELETE"])
 def delete_asset(asset_id):
     asset = db.session.get(Asset, asset_id)
@@ -263,7 +418,7 @@ def delete_asset(asset_id):
     }), 200
 
 
-
+# 6. Create asset tags
 @app.route("/assets/<int:asset_id>/tags", methods=["POST"])
 def add_asset_tags(asset_id):
     asset = db.session.get(Asset, asset_id)
@@ -281,6 +436,11 @@ def add_asset_tags(asset_id):
     if not isinstance(tags, list) or not tags:
         return jsonify({
             "error": "tags must be a non-empty list of strings"
+        }), 400
+
+    if len(tags) > 50:
+        return jsonify({
+            "error": "A maximum of 50 tags can be submitted at once"
         }), 400
 
     if any(
@@ -334,7 +494,23 @@ def add_asset_tags(asset_id):
         "tags": [item.tag for item in created],
     }), 201
 
+# 7. Get asset tags by id
+@app.route("/assets/<int:asset_id>/tags", methods=["GET"])
+def get_asset_tags(asset_id):
+    asset = db.session.get(Asset, asset_id)
 
+    if asset is None or asset.status != "Active":
+        return jsonify({"error": "Asset not found"}), 404
+
+    tags = AssetTag.query.filter_by(
+        asset_id=asset_id,
+        status="Active",
+    ).order_by(AssetTag.id).all()
+
+    return jsonify({
+        "asset_id": asset_id,
+        "tags": [item.tag for item in tags],
+    }), 200
 
 
 if __name__ == "__main__":
