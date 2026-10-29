@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "Asset Register API",
+    "description": "Flask Asset Register API using SQLite and SQLAlchemy.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:5000"
+    },
+    {
+      "key": "assetId",
+      "value": "4"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Asset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/assets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asset_name\": \"HP EliteBook Laptop\",\n  \"asset_tag\": \"AST-008\",\n  \"category\": \"IT Equipment\",\n  \"location\": \"Finance Department\",\n  \"purchase_date\": \"2026-10-28\",\n  \"purchase_cost\": 72000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Get All Active Assets",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/assets"
+      }
+    },
+    {
+      "name": "Filter Assets by Type and Tag",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/assets?type=IT%20Equipment&tag=Office",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "assets"
+          ],
+          "query": [
+            {
+              "key": "type",
+              "value": "IT Equipment"
+            },
+            {
+              "key": "tag",
+              "value": "Office"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Filter Assets by Tag",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/assets?tag=Office"
+      }
+    },
+    {
+      "name": "Get Asset by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/assets/{{assetId}}"
+      }
+    },
+    {
+      "name": "Update Asset",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/assets/{{assetId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"IT Department\",\n  \"purchase_cost\": 73000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Add Asset Tags",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/assets/{{assetId}}/tags",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tags\": [\n    \"Office\",\n    \"Laptop\",\n    \"Finance\"\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Deactivate Asset",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/assets/{{assetId}}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+$kind: http-example
+name: Test successful creation
+request:
+  url: http://127.0.0.1:5000/assets
+  method: POST
+  body:
+    type: json
+    content: "{\r
+
+      \  \"asset_name\": \"Lenovo ThinkPad Test\",\r
+
+      \  \"asset_tag\": \"AST-010\",\r
+
+      \  \"category\": \"IT Equipment\",\r
+
+      \  \"location\": \"IT Department\",\r
+
+      \  \"purchase_date\": \"2026-10-29\",\r
+
+      \  \"purchase_cost\": 72000\r
+
+      }"
+response:
+  statusCode: 201
+  statusText: CREATED
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Thu, 29 Oct 2026 06:00:53 GMT
+    Content-Type: application/json
+    Content-Length: "365"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "asset_name": "Lenovo ThinkPad Test",
+        "asset_tag": "AST-010",
+        "category": "IT Equipment",
+        "createdAt": "2026-10-29T06:00:53.468633",
+        "createdBy": "system",
+        "id": 10,
+        "location": "IT Department",
+        "purchase_cost": 72000,
+        "purchase_date": "2026-10-29",
+        "status": "Active",
+        "updatedAt": "2026-10-29T06:00:53.468638",
+        "updatedBy": "system"
+      }
+order: 2000

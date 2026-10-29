@@ -1,0 +1,766 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Asset-Register-API.postman_collection.json",
+    "version": "1.0.0",
+    "description": ""
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5000"
+    },
+    {
+      "url": ""
+    }
+  ],
+  "paths": {
+    "/assets": {
+      "get": {
+        "summary": "Get assests",
+        "responses": {
+          "200": {
+            "description": "Get assets",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:14:19 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 1173
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "asset_name": {
+                        "type": "string"
+                      },
+                      "asset_tag": {
+                        "type": "string"
+                      },
+                      "category": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "style"
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "location": {
+                        "type": "string"
+                      },
+                      "purchase_cost": {
+                        "type": "integer"
+                      },
+                      "purchase_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "style"
+                      },
+                      "updatedBy": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "example": [
+                  {
+                    "asset_name": "HP ProBook Laptop",
+                    "asset_tag": "AST-004",
+                    "category": "IT Equipment",
+                    "createdAt": "2026-10-27T08:32:57.493349",
+                    "createdBy": "system",
+                    "id": 4,
+                    "location": "Finance Department",
+                    "purchase_cost": 65000,
+                    "purchase_date": "2026-10-25",
+                    "status": "Active",
+                    "updatedAt": "2026-10-27T08:32:57.493353",
+                    "updatedBy": "system"
+                  },
+                  {
+                    "asset_name": "Lenova Laptop",
+                    "asset_tag": "AST-005",
+                    "category": "IT Equipment",
+                    "createdAt": "2026-10-27T09:04:26.471178",
+                    "createdBy": "system",
+                    "id": 5,
+                    "location": "Finance Department",
+                    "purchase_cost": 67000,
+                    "purchase_date": "2026-10-25",
+                    "status": "Active",
+                    "updatedAt": "2026-10-27T09:07:54.137341",
+                    "updatedBy": "system"
+                  },
+                  {
+                    "asset_name": "Dell Laptop",
+                    "asset_tag": "AST-007",
+                    "category": "IT Equipment",
+                    "createdAt": "2026-10-27T09:50:18.482709",
+                    "createdBy": "system",
+                    "id": 7,
+                    "location": "IT Department",
+                    "purchase_cost": 69000,
+                    "purchase_date": "2026-10-25",
+                    "status": "Active",
+                    "updatedAt": "2026-10-27T09:50:18.482754",
+                    "updatedBy": "system"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Asset",
+        "responses": {
+          "201": {
+            "description": "Create Asset",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:17:53 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 368
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset_name": {
+                      "type": "string"
+                    },
+                    "asset_tag": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "purchase_cost": {
+                      "type": "integer"
+                    },
+                    "purchase_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "asset_name": "HP EliteBook Laptop",
+                  "asset_tag": "AST-008",
+                  "category": "IT Equipment",
+                  "createdAt": "2026-10-28T06:17:52.999904",
+                  "createdBy": "system",
+                  "id": 8,
+                  "location": "Finance Department",
+                  "purchase_cost": 72000,
+                  "purchase_date": "2026-10-28",
+                  "status": "Active",
+                  "updatedAt": "2026-10-28T06:17:52.999911",
+                  "updatedBy": "system"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "asset_name": {
+                    "type": "string"
+                  },
+                  "asset_tag": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "purchase_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "purchase_cost": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "example": {
+                "asset_name": "HP EliteBook Laptop",
+                "asset_tag": "AST-008",
+                "category": "IT Equipment",
+                "location": "Finance Department",
+                "purchase_date": "2026-10-28",
+                "purchase_cost": 72000
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/4": {
+      "get": {
+        "summary": "Get asset by Id",
+        "responses": {
+          "200": {
+            "description": "Get asset by Id",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:15:23 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 366
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset_name": {
+                      "type": "string"
+                    },
+                    "asset_tag": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "purchase_cost": {
+                      "type": "integer"
+                    },
+                    "purchase_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "asset_name": "HP ProBook Laptop",
+                  "asset_tag": "AST-004",
+                  "category": "IT Equipment",
+                  "createdAt": "2026-10-27T08:32:57.493349",
+                  "createdBy": "system",
+                  "id": 4,
+                  "location": "Finance Department",
+                  "purchase_cost": 65000,
+                  "purchase_date": "2026-10-25",
+                  "status": "Active",
+                  "updatedAt": "2026-10-27T08:32:57.493353",
+                  "updatedBy": "system"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "//127.0.0.1{5000}/assets": {
+      "get": {
+        "summary": "Filter assets by tag",
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "urgent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filter assets by tag",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:27:08 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 398
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "asset_name": {
+                        "type": "string"
+                      },
+                      "asset_tag": {
+                        "type": "string"
+                      },
+                      "category": {
+                        "type": "string"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "style"
+                      },
+                      "createdBy": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "location": {
+                        "type": "string"
+                      },
+                      "purchase_cost": {
+                        "type": "integer"
+                      },
+                      "purchase_date": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "style"
+                      },
+                      "updatedBy": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "example": [
+                  {
+                    "asset_name": "HP ProBook Laptop",
+                    "asset_tag": "AST-004",
+                    "category": "IT Equipment",
+                    "createdAt": "2026-10-27T08:32:57.493349",
+                    "createdBy": "system",
+                    "id": 4,
+                    "location": "Finance Department",
+                    "purchase_cost": 65000,
+                    "purchase_date": "2026-10-25",
+                    "status": "Active",
+                    "updatedAt": "2026-10-27T08:32:57.493353",
+                    "updatedBy": "system"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assets/4/tags": {
+      "post": {
+        "summary": "Add Asset Tags",
+        "responses": {
+          "201": {
+            "description": "Add Asset Tags",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:26:10 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 121
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset_id": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "asset_id": 4,
+                  "message": "Tags added successfully",
+                  "tags": [
+                    "urgent",
+                    "warranty",
+                    "finance"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tags": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "tags": [
+                  "urgent",
+                  "warranty",
+                  "finance"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "New Request",
+        "responses": {}
+      }
+    },
+    "/assets/7": {
+      "get": {
+        "summary": "Update an asset",
+        "responses": {
+          "200": {
+            "description": "Update an asset",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:31:47 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 373
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asset_name": {
+                      "type": "string"
+                    },
+                    "asset_tag": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "createdBy": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "purchase_cost": {
+                      "type": "integer"
+                    },
+                    "purchase_date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "style"
+                    },
+                    "updatedBy": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "asset_name": "HP EliteBook Laptop",
+                  "asset_tag": "AST-008",
+                  "category": "IT Equipment",
+                  "createdAt": "2026-10-28T06:17:52.999904",
+                  "createdBy": "system",
+                  "id": 8,
+                  "location": "IT Department - Floor 2",
+                  "purchase_cost": 71000,
+                  "purchase_date": "2026-10-28",
+                  "status": "Active",
+                  "updatedAt": "2026-10-28T06:31:47.754634",
+                  "updatedBy": "system"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "location": {
+                    "type": "string"
+                  },
+                  "purchase_cost": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "example": {
+                "location": "IT Department - Floor 2",
+                "purchase_cost": 71000
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deactive asset",
+        "responses": {
+          "200": {
+            "description": "Deactive asset",
+            "headers": {
+              "Server": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Werkzeug/3.1.9 Python/3.15.1"
+              },
+              "Date": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Wed, 28 Oct 2026 06:33:03 GMT"
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 85
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "close"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "id": 7,
+                  "message": "Asset deactivated successfully",
+                  "status": "Inactive"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
