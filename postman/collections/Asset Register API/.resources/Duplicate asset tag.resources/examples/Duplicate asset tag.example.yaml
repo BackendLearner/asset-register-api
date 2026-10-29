@@ -1,0 +1,27 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets/9
+  method: PUT
+  body:
+    type: json
+    content: "{\r
+
+      \  \"asset_tag\": \"AST-004\"\r
+
+      }"
+response:
+  statusCode: 409
+  statusText: CONFLICT
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Thu, 29 Oct 2026 06:08:16 GMT
+    Content-Type: application/json
+    Content-Length: "111"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "error": "Asset update failed because of a database constraint conflict, such as a duplicate asset tag."
+      }
+order: 1000

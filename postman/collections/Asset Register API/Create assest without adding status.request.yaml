@@ -1,0 +1,22 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"asset_name\": \"Dell Laptop\",\r
+
+    \  \"asset_tag\": \"LAP-004\",\r
+
+    \  \"category\": \"IT Equipment\",\r
+
+    \  \"location\": \"Office Room 101\",\r
+
+    \  \"purchase_date\": \"2026-01-15\",\r
+
+    \  \"purchase_cost\": 65000\r
+
+    }"
+examples: .resources/Create assest without adding status.resources/examples
+order: 10000

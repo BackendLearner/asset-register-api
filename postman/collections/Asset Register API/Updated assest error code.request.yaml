@@ -1,0 +1,16 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets/9
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"asset_name\": \"Dell Laptop Updated\",\r
+
+    \  \"location\": \"IT Department - Floor 3\",\r
+
+    \  \"purchase_cost\": 68000\r
+
+    }"
+examples: .resources/Updated assest error code.resources/examples
+order: 14000

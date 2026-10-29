@@ -1,0 +1,37 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets
+  method: POST
+  body:
+    type: json
+    content: "{\r
+
+      \  \"asset_name\": \"\",\r
+
+      \  \"asset_tag\": \"AST-010\",\r
+
+      \  \"category\": \"IT Equipment\",\r
+
+      \  \"location\": \"Testing Department\",\r
+
+      \  \"purchase_date\": \"2026-10-29\",\r
+
+      \  \"purchase_cost\": 55000\r
+
+      }"
+response:
+  statusCode: 400
+  statusText: BAD REQUEST
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Thu, 29 Oct 2026 05:59:31 GMT
+    Content-Type: application/json
+    Content-Length: "40"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "error": "asset_name is required"
+      }
+order: 1000

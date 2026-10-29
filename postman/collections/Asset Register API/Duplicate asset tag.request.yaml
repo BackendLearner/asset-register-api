@@ -1,0 +1,12 @@
+$kind: http-request
+url: http://127.0.0.1:5000/assets/9
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"asset_tag\": \"AST-004\"\r
+
+    }"
+examples: .resources/Duplicate asset tag.resources/examples
+order: 15000

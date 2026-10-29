@@ -1,0 +1,42 @@
+$kind: http-example
+request:
+  url: http://127.0.0.1:5000/assets/9
+  method: PUT
+  body:
+    type: json
+    content: "{\r
+
+      \  \"asset_name\": \"Dell Laptop Updated\",\r
+
+      \  \"location\": \"IT Department - Floor 3\",\r
+
+      \  \"purchase_cost\": 68000\r
+
+      }"
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Server: Werkzeug/3.1.9 Python/3.15.1
+    Date: Thu, 29 Oct 2026 06:07:03 GMT
+    Content-Type: application/json
+    Content-Length: "373"
+    Connection: close
+  body:
+    type: json
+    content: |-
+      {
+        "asset_name": "Dell Laptop Updated",
+        "asset_tag": "LAP-004",
+        "category": "IT Equipment",
+        "createdAt": "2026-10-29T05:27:20.573960",
+        "createdBy": "system",
+        "id": 9,
+        "location": "IT Department - Floor 3",
+        "purchase_cost": 68000,
+        "purchase_date": "2026-01-15",
+        "status": "Active",
+        "updatedAt": "2026-10-29T06:07:03.183702",
+        "updatedBy": "system"
+      }
+order: 1000

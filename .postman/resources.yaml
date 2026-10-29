@@ -1,0 +1,8 @@
+workspace:
+  id: 960a2053-0630-4140-8c97-a2f05d71ab4f
+localResources:
+  specs:
+    - ../postman/specs/Asset-Register-API.postman_collection.json/Asset-Register-API.postman_collection.json.json
+resourceNameMappings:
+  specs:
+    - ../postman/specs/Asset-Register-API.postman_collection.json/Asset-Register-API.postman_collection.json.json: Asset-Register-API.postman_collection.json
