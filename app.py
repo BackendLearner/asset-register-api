@@ -86,7 +86,6 @@ def create_asset():
         "asset_tag": 50,
         "category": 100,
         "location": 100,
-        "status": 30,
     }
 
     for field, max_length in max_lengths.items():
@@ -103,12 +102,8 @@ def create_asset():
                     f"{field} must not exceed {max_length} characters", 400
                 )
 
-    status = data.get("status", "Active")
-
-    if status not in ("Active", "Inactive"):
-        return error_response(
-            "status must be Active or Inactive", 400
-        )
+    # Set status to Active automatically
+    status = "Active"
 
     try:
         purchase_date = validate_purchase_date(
