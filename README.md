@@ -29,6 +29,7 @@ Postman
 Git and GitHub
 Project Structure
 text
+
 asset-register-api/
 │
 ├── app.py
@@ -36,13 +37,12 @@ asset-register-api/
 ├── migrate_db.py
 ├── utils.py
 ├── requirements.txt
-├── .gitignore
-├── .env.example
 ├── README.md
 │
 ├── assets/
 │   ├── __init__.py
 │   ├── domain.py
+│   ├── repository.py
 │   │
 │   ├── schemas/
 │   │   ├── __init__.py
@@ -50,23 +50,34 @@ asset-register-api/
 │   │
 │   └── routes/
 │       ├── __init__.py
-│       └── asset_routes.py
-│
-├── instance/
+│       ├── asset_routes.py
+│       └── tag_routes.py
 │
 └── postman/
     └── Asset-Register-API.postman_collection.json
 
+
 File Responsibilities
-File	Responsibility
-app.py	Creates the Flask application and registers Blueprints.
-models.py	Defines SQLAlchemy database models and initializes the database object.
-migrate_db.py	Handles database schema migrations used by the project.
-utils.py	Contains reusable utility and response functions.
-assets/domain.py	Contains the Asset dataclass and its conversion methods.
-assets/schemas/asset_schema.py	Contains Pydantic models for request validation.
-assets/routes/asset_routes.py	Defines API endpoints and handles HTTP requests.
-requirements.txt	Lists project dependencies.
+
+app.py           Creates the Flask application and registers Blueprints.
+
+models.py        Defines SQLAlchemy database models and initializes the database.
+
+migrate_db.py    Handles database schema migrations.
+
+utils.py         Contains reusable utility and response functions.
+
+assets/domain.py Contains the Asset dataclass and conversion methods.
+
+assets/schemas/asset_schema.py Contains Pydantic models for request validation.
+
+assets/repository.py  Centralizes database operations through the AssetRepository class.
+
+assets/routes/asset_routes.py Defines asset API endpoints and handles HTTP requests.
+
+assets/routes/tag_routes.py Defines asset tag endpoints.
+
+requirements.txt   Lists project dependencies.
 
 Future assignment steps will introduce repository.py and exceptions.py to further separate database operations and application error handling.
 
@@ -430,7 +441,7 @@ Invalid request data returns HTTP 400 Bad Request with validation details.
 
 The schema also uses extra="forbid" to reject fields that are not defined in the request model.
 
-Domain Layer Using Dataclasses
+Domain Layer Using Dataclasses  
 
 The application uses Python dataclasses to represent asset information independently of the database models.
 
@@ -447,6 +458,49 @@ to_dict(): Converts an Asset object into dictionary format.
 field(default_factory=list): Provides a separate tags list for each Asset instance.
 
 This separates application-level asset data from SQLAlchemy database models.
+
+Repository Layer Using AssetRepository
+
+The application uses the Repository Pattern to separate database operations from API route handling.
+The repository is located in:
+
+text
+assets/
+└── repository.py
+
+
+The AssetRepository class is responsible for communicating with the database using SQLAlchemy.
+It centralizes database operations so that API endpoints do not directly access db.session.
+Repository Methods
+The AssetRepository class provides the following methods:
+Method	Responsibility
+create()	Creates and saves a new asset.
+get_by_id()	Retrieves an asset using its ID.
+list()	Retrieves active assets with optional category and tag filters.
+update()	Updates existing asset information.
+deactivate()	Changes an asset's status to Inactive.
+add_tags()	Adds tags to an asset while avoiding duplicate active tags.
+get_tags()	Retrieves active tags associated with an asset.
+Database Transaction Handling
+
+All database transaction operations are handled inside the repository.
+
+This includes:
+
+db.session.add()
+db.session.commit()
+db.session.rollback()
+
+The repository also handles SQLAlchemy database exceptions and re-raises them for the route layer to handle.
+
+Benefits of the Repository Pattern
+Separates database logic from API endpoints.
+Reduces code duplication.
+Makes database operations easier to maintain.
+Improves code organization.
+Makes future unit testing easier.
+
+API routes interact with the database through the AssetRepository class rather than directly accessing SQLAlchemy sessions.
 
 HTTP Status Codes
 Status code	Description
