@@ -1,16 +1,16 @@
+
 from flask import Blueprint, request, jsonify
 from models import Asset
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from pydantic import ValidationError
 from assets.schemas.asset_schema import AssetCreate, AssetUpdate
-from utils import error_response
 from assets.repository import AssetRepository
 
 
 asset_bp = Blueprint("asset", __name__)
 
 asset_repository = AssetRepository()
+
 
 # 1. Create Asset
 @asset_bp.route("", methods=["POST"])
@@ -34,15 +34,8 @@ def create_asset():
         status="Active"
     )
 
-    try:
-        asset_repository.create(asset)
+    asset_repository.create(asset)
 
-    except IntegrityError:
-       return error_response("Database constraint conflict", 409)
-
-    except SQLAlchemyError:
-         return error_response("Database error occurred", 500)
-    
     return jsonify(asset.to_dict()), 201
 
 
@@ -58,7 +51,10 @@ def get_assets():
         tag=tag
     )
 
-    return jsonify([asset.to_dict() for asset in assets]), 200
+    return jsonify([
+        asset.to_dict() for asset in assets
+    ]), 200
+
 
 # 3. Get Asset By ID
 @asset_bp.route("/<int:asset_id>", methods=["GET"])
@@ -66,19 +62,14 @@ def get_asset(asset_id):
 
     asset = asset_repository.get_by_id(asset_id)
 
-    if asset is None or asset.status != "Active":
-        return error_response("Asset not found", 404)
-
     return jsonify(asset.to_dict()), 200
+
 
 # 4. Update Asset
 @asset_bp.route("/<int:asset_id>", methods=["PUT"])
 def update_asset(asset_id):
 
     asset = asset_repository.get_by_id(asset_id)
-
-    if asset is None or asset.status != "Active":
-        return error_response("Asset not found", 404)
 
     try:
         data = AssetUpdate.model_validate(
@@ -88,21 +79,14 @@ def update_asset(asset_id):
         update_data = data.model_dump(exclude_unset=True)
 
         if not update_data:
-            return error_response(
-                "Provide valid asset fields to update", 400
-            )
+            return jsonify({
+                "error": "Provide valid asset fields to update"
+            }), 400
 
     except ValidationError as e:
         return jsonify({"errors": e.errors()}), 400
 
-    try:
-        asset_repository.update(asset, update_data)
-
-    except IntegrityError:
-        return error_response("Database constraint conflict", 409)
-
-    except SQLAlchemyError:
-        return error_response("Database error occurred", 500)
+    asset_repository.update(asset, update_data)
 
     return jsonify(asset.to_dict()), 200
 
@@ -113,19 +97,10 @@ def delete_asset(asset_id):
 
     asset = asset_repository.get_by_id(asset_id)
 
-    if asset is None or asset.status != "Active":
-        return error_response("Asset not found", 404)
-
-    try:
-        asset_repository.deactivate(asset)
-
-    except SQLAlchemyError:
-        return error_response("Internal server error", 500)
+    asset_repository.deactivate(asset)
 
     return jsonify({
         "message": "Asset deactivated successfully",
         "id": asset.id,
         "status": asset.status
     }), 200
-
-    

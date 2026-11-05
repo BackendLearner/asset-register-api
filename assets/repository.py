@@ -3,6 +3,11 @@ from typing import Optional
 
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from exceptions.asset_exceptions import (
+    AssetNotFoundError,
+    DuplicateAssetError
+)
+
 from models import db, Asset, AssetTag
 
 
@@ -15,17 +20,28 @@ class AssetRepository:
             db.session.commit()
             return asset
 
-        except IntegrityError:
+        except IntegrityError as exc:
             db.session.rollback()
-            raise
+
+            raise DuplicateAssetError(
+                f"Asset tag '{asset.asset_tag}' already exists"
+            ) from exc
 
         except SQLAlchemyError:
             db.session.rollback()
             raise
 
     # 2. Get Asset By ID
-    def get_by_id(self, asset_id: int) -> Optional[Asset]:
-        return db.session.get(Asset, asset_id)
+    def get_by_id(self, asset_id: int) -> Asset:
+
+        asset = db.session.get(Asset, asset_id)
+
+        if asset is None or asset.status != "Active":
+            raise AssetNotFoundError(
+                f"Active asset with ID {asset_id} not found"
+            )
+
+        return asset
 
     # 3. Get All Assets / Filter Assets
     def list(
@@ -60,8 +76,23 @@ class AssetRepository:
         update_data: dict
     ) -> Asset:
 
+        allowed_fields = {
+            "asset_name",
+            "asset_tag",
+            "category",
+            "location",
+            "purchase_date",
+            "purchase_cost"
+        }
+
         try:
             for field, value in update_data.items():
+
+                if field not in allowed_fields:
+                    raise ValueError(
+                        f"Field '{field}' cannot be updated"
+                    )
+
                 setattr(asset, field, value)
 
             asset.updatedBy = "system"
@@ -70,9 +101,12 @@ class AssetRepository:
 
             return asset
 
-        except IntegrityError:
+        except IntegrityError as exc:
             db.session.rollback()
-            raise
+
+            raise DuplicateAssetError(
+                "Asset update violates a database constraint"
+            ) from exc
 
         except SQLAlchemyError:
             db.session.rollback()
@@ -131,9 +165,12 @@ class AssetRepository:
 
             return created_tags
 
-        except IntegrityError:
+        except IntegrityError as exc:
             db.session.rollback()
-            raise
+
+            raise DuplicateAssetError(
+                f"Duplicate tag detected for asset ID {asset_id}"
+            ) from exc
 
         except SQLAlchemyError:
             db.session.rollback()
