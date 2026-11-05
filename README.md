@@ -2,7 +2,7 @@ Asset Register API
 
 A RESTful API built using Python, Flask, Flask-SQLAlchemy, SQLAlchemy, Pydantic, and SQLite to manage an organization's assets.
 
-The API supports creating, listing, filtering, retrieving, updating, tagging, and deactivating assets. It uses a structured application architecture with SQLAlchemy models, Python dataclasses, and Pydantic request validation.
+The API supports creating, listing, filtering, retrieving, updating, tagging, and deactivating assets. It follows a structured application architecture using SQLAlchemy models, Python dataclasses, Pydantic request validation, the Repository Pattern, and custom exception handling.
 
 Features
 Create and manage assets.
@@ -15,8 +15,10 @@ Soft-delete assets by changing their status to Inactive.
 Store asset data in a SQLite database using SQLAlchemy.
 Track creation and modification timestamps and user information.
 Validate request data using Pydantic v2.
-Return appropriate HTTP status codes and validation errors.
 Represent application-level asset data using Python dataclasses.
+Centralize database operations using the Repository Pattern.
+Handle application errors using custom exceptions.
+Return appropriate HTTP status codes and structured JSON error responses.
 Technologies Used
 Python 3.10+
 Flask
@@ -29,7 +31,6 @@ Postman
 Git and GitHub
 Project Structure
 text
-
 asset-register-api/
 │
 ├── app.py
@@ -38,6 +39,10 @@ asset-register-api/
 ├── utils.py
 ├── requirements.txt
 ├── README.md
+│
+├── exceptions/
+│   ├── __init__.py
+│   └── asset_exceptions.py
 │
 ├── assets/
 │   ├── __init__.py
@@ -56,31 +61,21 @@ asset-register-api/
 └── postman/
     └── Asset-Register-API.postman_collection.json
 
-
 File Responsibilities
 
-app.py           Creates the Flask application and registers Blueprints.
+app.py	Creates the Flask application, initializes the database, registers Blueprints, and configures global error handlers.
+models.py	Defines SQLAlchemy database models and initializes the database.
+migrate_db.py	Handles database schema migrations.
+utils.py	Contains reusable utility and response functions.
+assets/domain.py	Contains the Asset dataclass and conversion methods.
+assets/schemas/asset_schema.py	Contains Pydantic models for request validation.
+assets/repository.py	Centralizes database operations through the AssetRepository class.
+assets/routes/asset_routes.py	Defines asset API endpoints and handles HTTP requests.
+assets/routes/tag_routes.py	Defines asset tag endpoints.
+exceptions/asset_exceptions.py	Defines custom application exceptions.
+requirements.txt	Lists project dependencies.
 
-models.py        Defines SQLAlchemy database models and initializes the database.
-
-migrate_db.py    Handles database schema migrations.
-
-utils.py         Contains reusable utility and response functions.
-
-assets/domain.py Contains the Asset dataclass and conversion methods.
-
-assets/schemas/asset_schema.py Contains Pydantic models for request validation.
-
-assets/repository.py  Centralizes database operations through the AssetRepository class.
-
-assets/routes/asset_routes.py Defines asset API endpoints and handles HTTP requests.
-
-assets/routes/tag_routes.py Defines asset tag endpoints.
-
-requirements.txt   Lists project dependencies.
-
-Future assignment steps will introduce repository.py and exceptions.py to further separate database operations and application error handling.
-
+Installation and Setup
 Prerequisites
 
 Before running the project, ensure that you have installed:
@@ -89,7 +84,7 @@ Python 3.10 or later
 Git
 Visual Studio Code (recommended)
 Postman
-Installation and Setup
+
 1. Clone the repository
 bash
 git clone https://github.com/BackendLearner/asset-register-api.git
@@ -106,8 +101,6 @@ python -m venv .venv
 powershell
 .\.venv\Scripts\Activate.ps1
 
-
-After successful activation, your terminal should display (.venv).
 
 If PowerShell prevents script execution, use:
 
@@ -166,7 +159,7 @@ python app.py
 
 The development server should be available at:
 
-Base URL: http://127.0.0.1:5000
+Base URL: http://127.0.0.1:5001
 
 Keep the terminal open while testing the API.
 
@@ -175,7 +168,7 @@ API Endpoints
 All endpoints use the following base URL:
 
 text
-http://127.0.0.1:5000
+http://127.0.0.1:5001
 
 
 For requests with a body, select Body → raw → JSON in Postman.
@@ -198,11 +191,15 @@ json
   "purchase_cost": 65000
 }
 
-Required fields
+
+Required fields:
+
 asset_name
 asset_tag
 category
-Optional fields
+
+Optional fields:
+
 location
 purchase_date
 purchase_cost
@@ -228,10 +225,6 @@ json
   "location": "Office Room 101",
   "purchase_date": "2026-01-15",
   "purchase_cost": 65000.0,
-  "createdAt": "2026-10-28T10:00:00",
-  "updatedAt": "2026-10-28T10:00:00",
-  "createdBy": "system",
-  "updatedBy": "system",
   "status": "Active"
 }
 
@@ -245,14 +238,9 @@ Returns all assets whose status is Active.
 Method: GET
 Endpoint: /assets
 Expected status: 200 OK
-
-Example:
-
 http
 GET /assets
 
-
-Returns an array of active assets.
 
 If no active assets exist, the API returns an empty array.
 
@@ -264,7 +252,7 @@ Method: GET
 Endpoint: /assets?type=IT%20Equipment
 Expected status: 200 OK
 
-Alternatively, in Postman, add the following parameter:
+Alternatively, in Postman:
 
 Key	Value
 type	IT Equipment
@@ -288,15 +276,17 @@ Expected status: 200 OK
 
 Replace 1 with the actual asset ID.
 
-If the asset does not exist or has been deactivated, the API returns:
+If the asset does not exist or has been deactivated, the API raises an AssetNotFoundError.
 
-404 Not Found
+Expected status: 404 Not Found
 
 Example error response:
 
 json
 {
-  "error": "Asset not found"
+  "success": false,
+  "error": "AssetNotFoundError",
+  "message": "Active asset with ID 9999 not found"
 }
 
 6. Update an Asset
@@ -332,13 +322,11 @@ Validation rules
 All update fields are optional.
 Only supplied fields are updated.
 Empty update requests are rejected.
-Explicit null values are rejected for asset name, asset tag, and category.
+Explicit null values are rejected for required fields.
 Purchase cost cannot be negative.
 Unknown fields, including status, are rejected.
 
 The API uses Pydantic's model_dump(exclude_unset=True) to ensure that fields not supplied by the user remain unchanged.
-
-The response contains the updated asset details.
 
 7. Add Tags to an Asset
 
@@ -360,16 +348,40 @@ json
 Validation rules
 Tags must be a non-empty list.
 Every tag must be a non-empty string.
+A maximum of 50 tags can be submitted at once.
+Duplicate tags within the request are removed.
 Existing active tags for the asset are not added again.
 Only active assets can receive new tags.
-8. Deactivate an Asset
+8. Get Asset Tags
+
+Retrieves all active tags associated with an asset.
+
+Method: GET
+Endpoint: /assets/1/tags
+Expected status: 200 OK
+
+Example response:
+
+json
+{
+  "asset_id": 1,
+  "tags": [
+    "urgent",
+    "IT",
+    "warranty"
+  ]
+}
+
+9. Deactivate an Asset
 
 Soft-deletes an asset by changing its status to Inactive.
 
 Method: DELETE
 Endpoint: /assets/1
 Expected status: 200 OK
-Example response
+
+Example response:
+
 json
 {
   "message": "Asset deactivated successfully",
@@ -441,7 +453,7 @@ Invalid request data returns HTTP 400 Bad Request with validation details.
 
 The schema also uses extra="forbid" to reject fields that are not defined in the request model.
 
-Domain Layer Using Dataclasses  
+Domain Layer Using Dataclasses
 
 The application uses Python dataclasses to represent asset information independently of the database models.
 
@@ -462,6 +474,7 @@ This separates application-level asset data from SQLAlchemy database models.
 Repository Layer Using AssetRepository
 
 The application uses the Repository Pattern to separate database operations from API route handling.
+
 The repository is located in:
 
 text
@@ -470,12 +483,13 @@ assets/
 
 
 The AssetRepository class is responsible for communicating with the database using SQLAlchemy.
+
 It centralizes database operations so that API endpoints do not directly access db.session.
+
 Repository Methods
-The AssetRepository class provides the following methods:
 Method	Responsibility
 create()	Creates and saves a new asset.
-get_by_id()	Retrieves an asset using its ID.
+get_by_id()	Retrieves an active asset using its ID.
 list()	Retrieves active assets with optional category and tag filters.
 update()	Updates existing asset information.
 deactivate()	Changes an asset's status to Inactive.
@@ -487,11 +501,28 @@ All database transaction operations are handled inside the repository.
 
 This includes:
 
+python
 db.session.add()
 db.session.commit()
 db.session.rollback()
 
-The repository also handles SQLAlchemy database exceptions and re-raises them for the route layer to handle.
+
+The repository catches SQLAlchemy exceptions and rolls back failed transactions.
+
+It also converts database constraint violations into application-specific exceptions where appropriate.
+
+For example:
+
+python
+except IntegrityError as exc:
+    db.session.rollback()
+
+    raise DuplicateAssetError(
+        f"Asset tag '{asset.asset_tag}' already exists"
+    ) from exc
+
+
+This prevents database-specific exceptions from leaking into the API layer.
 
 Benefits of the Repository Pattern
 Separates database logic from API endpoints.
@@ -502,17 +533,141 @@ Makes future unit testing easier.
 
 API routes interact with the database through the AssetRepository class rather than directly accessing SQLAlchemy sessions.
 
+Custom Exception Handling
+
+The application uses custom exceptions to handle application-level errors in a structured and centralized way.
+
+Custom exceptions are defined in:
+
+text
+exceptions/
+├── __init__.py
+└── asset_exceptions.py
+
+Custom Exception Classes
+
+The application defines three custom exception classes.
+
+1. AssetError
+
+The base exception for all asset-related application errors.
+
+python
+class AssetError(Exception):
+    pass
+
+2. AssetNotFoundError
+
+Raised when an asset does not exist or is inactive.
+
+python
+class AssetNotFoundError(AssetError):
+    pass
+
+3. DuplicateAssetError
+
+Raised when an asset violates a uniqueness or database constraint.
+
+python
+class DuplicateAssetError(AssetError):
+    pass
+
+How Custom Exceptions Work
+
+The repository raises custom exceptions when an application-level error occurs.
+
+For example, when an asset ID does not exist:
+
+python
+if asset is None or asset.status != "Active":
+    raise AssetNotFoundError(
+        f"Active asset with ID {asset_id} not found"
+    )
+
+
+When a duplicate asset tag is submitted:
+
+python
+raise DuplicateAssetError(
+    f"Asset tag '{asset.asset_tag}' already exists"
+) from exc
+
+
+The repository is responsible for identifying and raising these exceptions.
+
+The Flask application is responsible for converting them into HTTP responses.
+
+Centralized Error Handling in Flask
+
+Custom exceptions are registered using Flask's @app.errorhandler() decorator in app.py.
+
+Example:
+
+python
+@app.errorhandler(AssetNotFoundError)
+def handle_asset_not_found(error):
+    return jsonify({
+        "success": False,
+        "error": "AssetNotFoundError",
+        "message": str(error)
+    }), 404
+
+
+Duplicate asset errors:
+
+python
+@app.errorhandler(DuplicateAssetError)
+def handle_duplicate_asset(error):
+    return jsonify({
+        "success": False,
+        "error": "DuplicateAssetError",
+        "message": str(error)
+    }), 409
+
+
+Other asset-related errors:
+
+python
+@app.errorhandler(AssetError)
+def handle_asset_error(error):
+    return jsonify({
+        "success": False,
+        "error": "AssetError",
+        "message": str(error)
+    }), 400
+
+
+Unexpected database errors are also handled centrally using:
+
+python
+@app.errorhandler(SQLAlchemyError)
+def handle_database_error(error):
+    app.logger.exception("Database error occurred")
+
+    return jsonify({
+        "success": False,
+        "error": "DatabaseError",
+        "message": "An internal database error occurred"
+    }), 500
+
+Benefits of Custom Exceptions
+Provides meaningful application-specific errors.
+Separates business errors from database errors.
+Avoids repeating error-handling logic in API endpoints.
+Keeps route functions cleaner.
+Makes HTTP status code handling consistent.
+Improves application maintainability.
+
+Instead of handling every exception separately inside each endpoint, Flask's centralized error handlers convert raised exceptions into appropriate HTTP responses.
+
 HTTP Status Codes
-Status code	Description
+Status Code	Description
 200 OK	Request completed successfully.
 201 Created	Asset or tags created successfully.
-400 Bad Request	Invalid JSON or input data.
+400 Bad Request	Invalid JSON, validation failure, or other asset application error.
 404 Not Found	Asset does not exist or is inactive.
 409 Conflict	Duplicate asset tag or database constraint conflict.
-500 Internal Server Error	Unexpected server error.
-
-The actual status codes and error messages depend on the application's implemented error handling.
-
+500 Internal Server Error	Unexpected database or server error.
 Testing with Postman
 1. Import the Postman collection
 Start the Flask application using python app.py.
@@ -532,6 +687,7 @@ Filter Assets by Tag — GET /assets?tag=urgent
 Get Asset by ID — GET /assets/1
 Update Asset — PUT /assets/1
 Add Asset Tags — POST /assets/1/tags
+Get Asset Tags — GET /assets/1/tags
 Deactivate Asset — DELETE /assets/1
 Get Asset by ID Again — verify that the deactivated asset returns 404.
 
@@ -557,8 +713,55 @@ Retrieving an asset using a nonexistent ID.
 Updating an inactive asset.
 Adding tags to an inactive asset.
 Retrieving an asset after deactivation.
+4. Test Custom Exception Responses
 
-Verify that the returned HTTP status codes and JSON error messages match the implementation.
+Verify that custom exceptions return the correct HTTP status codes and JSON responses.
+
+Test 404 – AssetNotFoundError
+
+Request:
+
+http
+GET /assets/9999
+
+
+Expected response:
+
+json
+{
+  "success": false,
+  "error": "AssetNotFoundError",
+  "message": "Active asset with ID 9999 not found"
+}
+
+Test 409 – DuplicateAssetError
+
+Create an asset using an asset_tag that already exists.
+
+Expected response:
+
+json
+{
+  "success": false,
+  "error": "DuplicateAssetError",
+  "message": "Asset tag 'AST-017' already exists"
+}
+
+Test 400 – Pydantic Validation Error
+
+Request body:
+
+json
+{
+  "asset_name": "",
+  "asset_tag": "",
+  "category": ""
+}
+
+
+Expected status: 400 Bad Request
+
+The response contains Pydantic validation details for the invalid fields.
 
 Run the complete Postman collection using Collection Runner after significant changes.
 
@@ -592,25 +795,62 @@ __pycache__/
 instance/
 .pytest_cache/
 
+Creating a Feature Branch and Pull Request
 
-To commit and push changes:
+Create a new feature branch:
+
+bash
+git checkout -b feature/custom-exception-handling
+
+
+Stage your changes:
 
 bash
 git add .
-git commit -m "Describe your changes"
-git push
 
 
-Use feature branches and pull requests according to the project's contribution workflow.
+Commit your changes:
 
+bash
+git commit -m "Add repository pattern and custom exception handling"
+
+
+Push your feature branch:
+
+bash
+git push -u origin feature/custom-exception-handling
+
+
+Then:
+
+Open your GitHub repository.
+Select Compare & Pull Request.
+Set the base branch to main (or your project's target branch).
+Set the compare branch to feature/custom-exception-handling.
+Add a meaningful pull request title and description.
+Create the pull request.
+Review the changes before merging.
 Future Assignment Improvements
 
-The following improvements are planned as part of the backend architecture assignment:
+The following improvements can be introduced in future development:
 
-AssetRepository: Introduce an AssetRepository class to centralize all database operations and remove direct database access from API endpoints.
-Custom Exceptions: Introduce custom exceptions such as AssetNotFoundError and DuplicateAssetError, with centralized error handling.
-Mypy: Add static type checking to Python functions and classes, and ensure that mypy . passes without errors.
-Automated Testing: Add automated unit and integration tests.
+Mypy: Add static type checking to Python functions and classes.
+Automated Testing: Add automated unit and integration tests using pytest.
 Authentication: Introduce authentication and role-based access control.
 Pagination: Implement pagination for asset listing.
 Database Migrations: Introduce Flask-Migrate for database schema management.
+Logging: Implement structured application logging.
+API Documentation: Add Swagger/OpenAPI documentation.
+Current Implementation Summary
+
+The Asset Register API currently includes:
+
+Flask Blueprint-based application structure.
+SQLAlchemy database models.
+Python dataclasses for domain representation.
+Pydantic v2 request validation.
+Repository Pattern for database operations.
+Custom exceptions for application errors.
+Centralized Flask error handlers.
+SQLite database integration.
+Postman API testing.
