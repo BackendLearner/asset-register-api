@@ -1,16 +1,22 @@
 
 from datetime import datetime, timezone
+from typing import Any
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
 
-db = SQLAlchemy()
+class Base(DeclarativeBase):
+    pass
 
 
-def utc_now():
+db = SQLAlchemy(model_class=Base)
+
+
+def utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-class Asset(db.Model):
+class Asset(Base):
     __tablename__ = "assets"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -41,7 +47,7 @@ class Asset(db.Model):
         db.String(30), nullable=False, default="Active"
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "asset_name": self.asset_name,
@@ -53,15 +59,21 @@ class Asset(db.Model):
                 if self.purchase_date else None
             ),
             "purchase_cost": self.purchase_cost,
-            "createdAt": self.createdAt.isoformat() if self.createdAt else None,
-            "updatedAt": self.updatedAt.isoformat() if self.updatedAt else None,
+            "createdAt": (
+                self.createdAt.strftime("%Y-%m-%d %H:%M:%S")
+                if self.createdAt else None
+            ),
+            "updatedAt": (
+                self.updatedAt.strftime("%Y-%m-%d %H:%M:%S")
+                if self.updatedAt else None
+            ),
             "createdBy": self.createdBy,
             "updatedBy": self.updatedBy,
             "status": self.status,
         }
 
-    
-class AssetTag(db.Model):
+
+class AssetTag(Base):
     __tablename__ = "asset_tags"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -95,18 +107,27 @@ class AssetTag(db.Model):
     )
 
     __table_args__ = (
-        db.UniqueConstraint("asset_id", "tag", name="uq_asset_tag"),
+        db.UniqueConstraint(
+            "asset_id",
+            "tag",
+            name="uq_asset_tag"
+        ),
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "asset_id": self.asset_id,
             "tag": self.tag,
-            "createdAt": self.createdAt.isoformat() if self.createdAt else None,
-            "updatedAt": self.updatedAt.isoformat() if self.updatedAt else None,
+            "createdAt": (
+                self.createdAt.strftime("%Y-%m-%d %H:%M:%S")
+                if self.createdAt else None
+            ),
+            "updatedAt": (
+                self.updatedAt.strftime("%Y-%m-%d %H:%M:%S")
+                if self.updatedAt else None
+            ),
             "createdBy": self.createdBy,
             "updatedBy": self.updatedBy,
             "status": self.status,
         }
-
