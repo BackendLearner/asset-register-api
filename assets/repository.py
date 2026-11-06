@@ -1,6 +1,7 @@
 
-from typing import Optional
+from typing import Optional, List, Any
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from exceptions.asset_exceptions import (
@@ -22,7 +23,6 @@ class AssetRepository:
 
         except IntegrityError as exc:
             db.session.rollback()
-
             raise DuplicateAssetError(
                 f"Asset tag '{asset.asset_tag}' already exists"
             ) from exc
@@ -48,32 +48,40 @@ class AssetRepository:
         self,
         asset_type: Optional[str] = None,
         tag: Optional[str] = None
-    ) -> list[Asset]:
+    ) -> List[Asset]:
 
-        query = Asset.query.filter_by(status="Active")
+        query = select(Asset).where(
+            Asset.status == "Active"
+        )
 
         if asset_type:
-            query = query.filter(
+            query = query.where(
                 Asset.category == asset_type
             )
 
         if tag:
-            query = query.filter(
-                Asset.id.in_(
-                    db.session.query(AssetTag.asset_id).filter_by(
-                        tag=tag,
-                        status="Active"
-                    )
-                )
+            tag_subquery = select(
+                AssetTag.asset_id
+            ).where(
+                AssetTag.tag == tag,
+                AssetTag.status == "Active"
             )
 
-        return query.order_by(Asset.id).all()
+            query = query.where(
+                Asset.id.in_(tag_subquery)
+            )
+
+        result = db.session.execute(
+            query.order_by(Asset.id)
+        )
+
+        return list(result.scalars().all())
 
     # 4. Update Asset
     def update(
         self,
         asset: Asset,
-        update_data: dict
+        update_data: dict[str, Any]
     ) -> Asset:
 
         allowed_fields = {
@@ -98,12 +106,10 @@ class AssetRepository:
             asset.updatedBy = "system"
 
             db.session.commit()
-
             return asset
 
         except IntegrityError as exc:
             db.session.rollback()
-
             raise DuplicateAssetError(
                 "Asset update violates a database constraint"
             ) from exc
@@ -120,7 +126,6 @@ class AssetRepository:
             asset.updatedBy = "system"
 
             db.session.commit()
-
             return asset
 
         except SQLAlchemyError:
@@ -131,20 +136,24 @@ class AssetRepository:
     def add_tags(
         self,
         asset_id: int,
-        tags: list[str]
-    ) -> list[AssetTag]:
+        tags: List[str]
+    ) -> List[AssetTag]:
 
         try:
-            existing_tags = AssetTag.query.filter_by(
-                asset_id=asset_id,
-                status="Active"
-            ).all()
+            existing_tags_query = select(AssetTag).where(
+                AssetTag.asset_id == asset_id,
+                AssetTag.status == "Active"
+            )
+
+            existing_tags = db.session.execute(
+                existing_tags_query
+            ).scalars().all()
 
             existing_tag_names = {
                 item.tag for item in existing_tags
             }
 
-            created_tags = []
+            created_tags: List[AssetTag] = []
 
             for tag in tags:
                 if tag not in existing_tag_names:
@@ -167,7 +176,6 @@ class AssetRepository:
 
         except IntegrityError as exc:
             db.session.rollback()
-
             raise DuplicateAssetError(
                 f"Duplicate tag detected for asset ID {asset_id}"
             ) from exc
@@ -177,9 +185,13 @@ class AssetRepository:
             raise
 
     # 7. Get Asset Tags
-    def get_tags(self, asset_id: int) -> list[AssetTag]:
+    def get_tags(self, asset_id: int) -> List[AssetTag]:
 
-        return AssetTag.query.filter_by(
-            asset_id=asset_id,
-            status="Active"
-        ).order_by(AssetTag.id).all()
+        query = select(AssetTag).where(
+            AssetTag.asset_id == asset_id,
+            AssetTag.status == "Active"
+        ).order_by(AssetTag.id)
+
+        result = db.session.execute(query)
+
+        return list(result.scalars().all())
