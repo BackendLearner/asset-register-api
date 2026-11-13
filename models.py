@@ -58,36 +58,7 @@ class Asset(Base):
         lazy=True  
     )
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "asset_name": self.asset_name,
-            "asset_tag": self.asset_tag,
-            "category": self.category,
-            "location": self.location,
-
-            "purchase_date": (
-                self.purchase_date.isoformat()
-                if self.purchase_date else None
-            ),
-
-            "purchase_cost": self.purchase_cost,
-
-            "createdAt": (
-                self.createdAt.strftime("%Y-%m-%d %H:%M:%S")
-                if self.createdAt else None
-            ),
-
-            "updatedAt": (
-                self.updatedAt.strftime("%Y-%m-%d %H:%M:%S")
-                if self.updatedAt else None
-            ),
-
-            "createdBy": self.createdBy,
-            "updatedBy": self.updatedBy,
-            "status": self.status,
-        }
-
+    
 
 class AssetTag(Base):
     __tablename__ = "asset_tags"
@@ -134,23 +105,4 @@ class AssetTag(Base):
         ),
     )
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "id": self.id,
-            "asset_id": self.asset_id,
-            "tag": self.tag,
-
-            "createdAt": (
-                self.createdAt.strftime("%Y-%m-%d %H:%M:%S")
-                if self.createdAt else None
-            ),
-
-            "updatedAt": (
-                self.updatedAt.strftime("%Y-%m-%d %H:%M:%S")
-                if self.updatedAt else None
-            ),
-
-            "createdBy": self.createdBy,
-            "updatedBy": self.updatedBy,
-            "status": self.status,
-        }
+   
