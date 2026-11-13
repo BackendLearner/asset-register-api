@@ -4,25 +4,47 @@ from typing import Optional, List, Any
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from exceptions.asset_exceptions import (
+from exceptions import (
     AssetNotFoundError,
     DuplicateAssetError
 )
 
 from models import db, Asset, AssetTag
+from domain import AssetData
 
 
 class AssetRepository:
 
-    # 1. Create Asset
+    # 1. Convert SQLAlchemy Asset into Domain AssetData
+    def asset_to_dict(self, asset: Asset) -> dict[str, Any]:
+
+        data = asset.to_dict()
+
+        # Include only Active tags
+        data["tags"] = [
+            tag.to_dict()
+            for tag in asset.tags
+            if tag.status == "Active"
+        ]
+
+        # Convert into Domain object
+        domain_asset = AssetData.from_dict(data)
+
+        return domain_asset.to_dict()
+
+
+    # 2. Create Asset
     def create(self, asset: Asset) -> Asset:
+
         try:
             db.session.add(asset)
             db.session.commit()
+
             return asset
 
         except IntegrityError as exc:
             db.session.rollback()
+
             raise DuplicateAssetError(
                 f"Asset tag '{asset.asset_tag}' already exists"
             ) from exc
@@ -31,7 +53,8 @@ class AssetRepository:
             db.session.rollback()
             raise
 
-    # 2. Get Asset By ID
+
+    # 3. Get Active Asset By ID
     def get_by_id(self, asset_id: int) -> Asset:
 
         asset = db.session.get(Asset, asset_id)
@@ -43,23 +66,28 @@ class AssetRepository:
 
         return asset
 
-    # 3. Get All Assets / Filter Assets
+
+    # 4. Get All Active Assets / Filter Assets
     def list(
         self,
         asset_type: Optional[str] = None,
         tag: Optional[str] = None
-    ) -> List[Asset]:
+    ) -> List[dict[str, Any]]:
 
+        # Only retrieve active assets
         query = select(Asset).where(
             Asset.status == "Active"
         )
 
+        # Filter by asset category
         if asset_type:
             query = query.where(
                 Asset.category == asset_type
             )
 
+        # Filter by active asset tags
         if tag:
+
             tag_subquery = select(
                 AssetTag.asset_id
             ).where(
@@ -75,9 +103,15 @@ class AssetRepository:
             query.order_by(Asset.id)
         )
 
-        return list(result.scalars().all())
+        assets = list(result.scalars().all())
 
-    # 4. Update Asset
+        return [
+            self.asset_to_dict(asset)
+            for asset in assets
+        ]
+
+
+    # 5. Update Asset
     def update(
         self,
         asset: Asset,
@@ -94,6 +128,7 @@ class AssetRepository:
         }
 
         try:
+
             for field, value in update_data.items():
 
                 if field not in allowed_fields:
@@ -106,10 +141,12 @@ class AssetRepository:
             asset.updatedBy = "system"
 
             db.session.commit()
+
             return asset
 
         except IntegrityError as exc:
             db.session.rollback()
+
             raise DuplicateAssetError(
                 "Asset update violates a database constraint"
             ) from exc
@@ -118,57 +155,87 @@ class AssetRepository:
             db.session.rollback()
             raise
 
-    # 5. Deactivate Asset
+
+    # 6. Deactivate Asset and All Its Active Tags
     def deactivate(self, asset: Asset) -> Asset:
 
         try:
+
+            # Deactivate the asset
             asset.status = "Inactive"
             asset.updatedBy = "system"
 
+            # Deactivate all associated active tags
+            for tag in asset.tags:
+
+                if tag.status == "Active":
+
+                    tag.status = "Inactive"
+                    tag.updatedBy = "system"
+
             db.session.commit()
+
             return asset
 
         except SQLAlchemyError:
             db.session.rollback()
             raise
 
-    # 6. Add Asset Tags
+
+    # 7. Add Multiple Asset Tags
     def add_tags(
         self,
         asset_id: int,
         tags: List[str]
     ) -> List[AssetTag]:
 
+        # Ensure asset exists and is active
+        self.get_by_id(asset_id)
+
         try:
-            existing_tags_query = select(AssetTag).where(
-                AssetTag.asset_id == asset_id,
-                AssetTag.status == "Active"
-            )
-
-            existing_tags = db.session.execute(
-                existing_tags_query
-            ).scalars().all()
-
-            existing_tag_names = {
-                item.tag for item in existing_tags
-            }
 
             created_tags: List[AssetTag] = []
 
             for tag in tags:
-                if tag not in existing_tag_names:
 
+                # Check whether tag already exists
+                existing_tag_query = select(
+                    AssetTag
+                ).where(
+                    AssetTag.asset_id == asset_id,
+                    AssetTag.tag == tag
+                )
+
+                existing_tag = db.session.execute(
+                    existing_tag_query
+                ).scalar_one_or_none()
+
+                if existing_tag:
+
+                    # Skip already active tags
+                    if existing_tag.status == "Active":
+                        continue
+
+                    # Reactivate previously deactivated tag
+                    existing_tag.status = "Active"
+                    existing_tag.updatedBy = "system"
+
+                    created_tags.append(existing_tag)
+
+                else:
+
+                    # Create a new tag
                     asset_tag = AssetTag(
                         asset_id=asset_id,
                         tag=tag,
                         createdBy="system",
-                        updatedBy="system"
+                        updatedBy="system",
+                        status="Active"
                     )
 
                     db.session.add(asset_tag)
-                    created_tags.append(asset_tag)
 
-                    existing_tag_names.add(tag)
+                    created_tags.append(asset_tag)
 
             db.session.commit()
 
@@ -176,6 +243,7 @@ class AssetRepository:
 
         except IntegrityError as exc:
             db.session.rollback()
+
             raise DuplicateAssetError(
                 f"Duplicate tag detected for asset ID {asset_id}"
             ) from exc
@@ -184,8 +252,12 @@ class AssetRepository:
             db.session.rollback()
             raise
 
-    # 7. Get Asset Tags
+
+    # 8. Get Active Asset Tags
     def get_tags(self, asset_id: int) -> List[AssetTag]:
+
+        # Ensure parent asset is active
+        self.get_by_id(asset_id)
 
         query = select(AssetTag).where(
             AssetTag.asset_id == asset_id,
