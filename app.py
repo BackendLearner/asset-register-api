@@ -1,21 +1,21 @@
 from flask import Flask, jsonify
 from dotenv import load_dotenv
+from sqlalchemy.exc import SQLAlchemyError
+import os
 from models import db
-from assets import assets_bp
-
-from exceptions.asset_exceptions import (
+from routes import asset_bp
+from pydantic import ValidationError
+from exceptions import (
     AssetError,
     AssetNotFoundError,
-    DuplicateAssetError
+    DuplicateAssetError,
+    
 )
-
-from sqlalchemy.exc import SQLAlchemyError
-
-import os
 
 load_dotenv()
 
 app = Flask(__name__)
+
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL", "sqlite:///assets.db"
@@ -26,12 +26,12 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 
 app.register_blueprint(
-    assets_bp,
+    asset_bp,
     url_prefix="/assets"
 )
 
 
-# Handle Asset Not Found
+# 1. Handle Asset Not Found
 @app.errorhandler(AssetNotFoundError)
 def handle_asset_not_found(error):
 
@@ -42,7 +42,7 @@ def handle_asset_not_found(error):
     }), 404
 
 
-# Handle Duplicate Asset
+# 2. Handle Duplicate Asset
 @app.errorhandler(DuplicateAssetError)
 def handle_duplicate_asset(error):
 
@@ -50,10 +50,10 @@ def handle_duplicate_asset(error):
         "success": False,
         "error": "DuplicateAssetError",
         "message": str(error)
-    }), 409
+    }), 400
 
 
-# Handle Other Asset Errors
+# 3. Handle Other Asset Errors
 @app.errorhandler(AssetError)
 def handle_asset_error(error):
 
@@ -64,7 +64,7 @@ def handle_asset_error(error):
     }), 400
 
 
-# Handle Database Errors
+# 4. Handle Database Errors
 @app.errorhandler(SQLAlchemyError)
 def handle_database_error(error):
 
@@ -77,6 +77,38 @@ def handle_database_error(error):
     }), 500
 
 
+# 5. Handle Unexpected Errors
+@app.errorhandler(Exception)
+def handle_unexpected_error(error):
+
+    app.logger.exception("Unexpected error occurred")
+
+    return jsonify({
+        "success": False,
+        "error": "InternalServerError",
+        "message": "An unexpected server error occurred"
+    }), 500
+
+@app.errorhandler(ValidationError)
+def handle_pydantic_validation_error(error):
+
+    errors = [
+        {
+            "field": ".".join(
+                str(part) for part in item["loc"]
+            ) or "body",
+            "message": item["msg"]
+        }
+        for item in error.errors()
+    ]
+
+    return jsonify({
+        "success": False,
+        "error": "AssetValidationError",
+        "message": "Validation failed",
+        "details": errors
+    }), 400
+
 @app.route("/")
 def home():
     return "Welcome to the Asset Register API!"
@@ -84,7 +116,16 @@ def home():
 
 if __name__ == "__main__":
 
+    print("Starting Asset Register API...")
+
     with app.app_context():
         db.create_all()
 
-    app.run(debug=True, port=5001)
+    print("Database initialized successfully!")
+
+    app.run(
+        host="127.0.0.1",
+        port=5001,
+        debug=True,
+        use_reloader=False
+    )

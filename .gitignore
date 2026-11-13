@@ -8,5 +8,6 @@ env/
 *.sqlite3
 __pycache__/
 *.py[cod]
+.mypy_cache/
 .pytest_cache/
 .vscode/
