@@ -1,9 +1,9 @@
 
 from flask import Blueprint, request, jsonify
 
-from models import Asset
 from schemas import AssetCreate, AssetUpdate, AssetTagCreate
 from repository import AssetRepository
+from domain import AssetData
 from exceptions import AssetValidationError
 
 
@@ -20,7 +20,7 @@ def create_asset():
         request.get_json(silent=True)
     )
 
-    asset = Asset(
+    asset_data = AssetData(
         asset_name=data.asset_name,
         asset_tag=data.asset_tag,
         category=data.category,
@@ -30,11 +30,9 @@ def create_asset():
         status="Active"
     )
 
-    asset_repository.create(asset)
+    asset = asset_repository.create(asset_data)
 
-    return jsonify(
-        asset_repository.asset_to_dict(asset)
-    ), 201
+    return jsonify(asset.to_dict()), 201
 
 
 # 2. Get All Assets
@@ -46,7 +44,9 @@ def get_assets():
         tag=request.args.get("tag")
     )
 
-    return jsonify(assets), 200
+    return jsonify([
+        asset.to_dict() for asset in assets
+    ]), 200
 
 
 # 3. Get Asset By ID
@@ -55,16 +55,12 @@ def get_asset(asset_id):
 
     asset = asset_repository.get_by_id(asset_id)
 
-    return jsonify(
-        asset_repository.asset_to_dict(asset)
-    ), 200
+    return jsonify(asset.to_dict()), 200
 
 
 # 4. Update Asset
 @asset_bp.route("/<int:asset_id>", methods=["PUT"])
 def update_asset(asset_id):
-
-    asset = asset_repository.get_by_id(asset_id)
 
     data = AssetUpdate.model_validate(
         request.get_json(silent=True)
@@ -80,20 +76,19 @@ def update_asset(asset_id):
             }
         ])
 
-    asset_repository.update(asset, update_data)
+    asset = asset_repository.update(
+        asset_id,
+        update_data
+    )
 
-    return jsonify(
-        asset_repository.asset_to_dict(asset)
-    ), 200
+    return jsonify(asset.to_dict()), 200
 
 
 # 5. Deactivate Asset
 @asset_bp.route("/<int:asset_id>", methods=["DELETE"])
 def delete_asset(asset_id):
 
-    asset = asset_repository.get_by_id(asset_id)
-
-    asset_repository.deactivate(asset)
+    asset = asset_repository.deactivate(asset_id)
 
     return jsonify({
         "message": "Asset deactivated successfully",
@@ -119,8 +114,7 @@ def add_asset_tags(asset_id):
         "message": "Tags added successfully",
         "asset_id": asset_id,
         "tags": [
-            asset_repository.tag_to_dict(tag)
-            for tag in created_tags
+            tag.to_dict() for tag in created_tags
         ]
     }), 201
 
@@ -134,7 +128,6 @@ def get_asset_tags(asset_id):
     return jsonify({
         "asset_id": asset_id,
         "tags": [
-            asset_repository.tag_to_dict(tag)
-            for tag in tags
+            tag.to_dict() for tag in tags
         ]
     }), 200

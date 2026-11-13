@@ -1,5 +1,5 @@
 
-from typing import Optional, List, Any
+from typing import Optional, List
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -10,37 +10,67 @@ from exceptions import (
 )
 
 from models import db, Asset, AssetTag
-from domain import AssetData
+from domain import AssetData, AssetTagData
 
 
 class AssetRepository:
 
-    # 1. Convert SQLAlchemy Asset into Domain AssetData
-    def asset_to_dict(self, asset: Asset) -> dict[str, Any]:
+    def _tag_to_domain(self, tag: AssetTag) -> AssetTagData:
 
-        data = asset.to_dict()
+        return AssetTagData(
+            id=tag.id,
+            asset_id=tag.asset_id,
+            tag=tag.tag,
+            createdAt=tag.createdAt,
+            updatedAt=tag.updatedAt,
+            createdBy=tag.createdBy,
+            updatedBy=tag.updatedBy,
+            status=tag.status
+        )
 
-        # Include only Active tags
-        data["tags"] = [
-            tag.to_dict()
-            for tag in asset.tags
-            if tag.status == "Active"
-        ]
+    def _asset_to_domain(self, asset: Asset) -> AssetData:
 
-        # Convert into Domain object
-        domain_asset = AssetData.from_dict(data)
+        return AssetData(
+            id=asset.id,
+            asset_name=asset.asset_name,
+            asset_tag=asset.asset_tag,
+            category=asset.category,
+            location=asset.location,
+            purchase_date=asset.purchase_date,
+            purchase_cost=asset.purchase_cost,
+            createdAt=asset.createdAt,
+            updatedAt=asset.updatedAt,
+            createdBy=asset.createdBy,
+            updatedBy=asset.updatedBy,
+            status=asset.status,
 
-        return domain_asset.to_dict()
+            tags=[
+                self._tag_to_domain(tag)
+                for tag in asset.tags
+                if tag.status == "Active"
+            ]
+        )
 
 
-    # 2. Create Asset
-    def create(self, asset: Asset) -> Asset:
+    def create(self, asset_data: AssetData) -> AssetData:
+
+        asset = Asset(
+            asset_name=asset_data.asset_name,
+            asset_tag=asset_data.asset_tag,
+            category=asset_data.category,
+            location=asset_data.location,
+            purchase_date=asset_data.purchase_date,
+            purchase_cost=asset_data.purchase_cost,
+            createdBy=asset_data.createdBy,
+            updatedBy=asset_data.updatedBy,
+            status=asset_data.status
+        )
 
         try:
             db.session.add(asset)
             db.session.commit()
 
-            return asset
+            return self._asset_to_domain(asset)
 
         except IntegrityError as exc:
             db.session.rollback()
@@ -54,8 +84,7 @@ class AssetRepository:
             raise
 
 
-    # 3. Get Active Asset By ID
-    def get_by_id(self, asset_id: int) -> Asset:
+    def get_by_id(self, asset_id: int) -> AssetData:
 
         asset = db.session.get(Asset, asset_id)
 
@@ -64,30 +93,26 @@ class AssetRepository:
                 f"Active asset with ID {asset_id} not found"
             )
 
-        return asset
+        return self._asset_to_domain(asset)
 
+    
 
-    # 4. Get All Active Assets / Filter Assets
     def list(
         self,
         asset_type: Optional[str] = None,
         tag: Optional[str] = None
-    ) -> List[dict[str, Any]]:
+    ) -> List[AssetData]:
 
-        # Only retrieve active assets
         query = select(Asset).where(
             Asset.status == "Active"
         )
 
-        # Filter by asset category
         if asset_type:
             query = query.where(
                 Asset.category == asset_type
             )
 
-        # Filter by active asset tags
         if tag:
-
             tag_subquery = select(
                 AssetTag.asset_id
             ).where(
@@ -103,20 +128,20 @@ class AssetRepository:
             query.order_by(Asset.id)
         )
 
-        assets = list(result.scalars().all())
+        assets = result.scalars().all()
 
         return [
-            self.asset_to_dict(asset)
+            self._asset_to_domain(asset)
             for asset in assets
         ]
 
+   
 
-    # 5. Update Asset
     def update(
         self,
-        asset: Asset,
-        update_data: dict[str, Any]
-    ) -> Asset:
+        asset_id: int,
+        update_data: dict
+    ) -> AssetData:
 
         allowed_fields = {
             "asset_name",
@@ -127,8 +152,14 @@ class AssetRepository:
             "purchase_cost"
         }
 
-        try:
+        asset = db.session.get(Asset, asset_id)
 
+        if asset is None or asset.status != "Active":
+            raise AssetNotFoundError(
+                f"Active asset with ID {asset_id} not found"
+            )
+
+        try:
             for field, value in update_data.items():
 
                 if field not in allowed_fields:
@@ -142,7 +173,7 @@ class AssetRepository:
 
             db.session.commit()
 
-            return asset
+            return self._asset_to_domain(asset)
 
         except IntegrityError as exc:
             db.session.rollback()
@@ -156,50 +187,55 @@ class AssetRepository:
             raise
 
 
-    # 6. Deactivate Asset and All Its Active Tags
-    def deactivate(self, asset: Asset) -> Asset:
+    def deactivate(self, asset_id: int) -> AssetData:
+
+        asset = db.session.get(Asset, asset_id)
+
+        if asset is None or asset.status != "Active":
+            raise AssetNotFoundError(
+                f"Active asset with ID {asset_id} not found"
+            )
 
         try:
-
-            # Deactivate the asset
             asset.status = "Inactive"
             asset.updatedBy = "system"
 
-            # Deactivate all associated active tags
             for tag in asset.tags:
 
                 if tag.status == "Active":
-
                     tag.status = "Inactive"
                     tag.updatedBy = "system"
 
             db.session.commit()
 
-            return asset
+            return self._asset_to_domain(asset)
 
         except SQLAlchemyError:
             db.session.rollback()
             raise
 
+   
 
-    # 7. Add Multiple Asset Tags
     def add_tags(
         self,
         asset_id: int,
         tags: List[str]
-    ) -> List[AssetTag]:
+    ) -> List[AssetTagData]:
 
-        # Ensure asset exists and is active
-        self.get_by_id(asset_id)
+        # Verify parent asset exists and is active
+        asset = db.session.get(Asset, asset_id)
+
+        if asset is None or asset.status != "Active":
+            raise AssetNotFoundError(
+                f"Active asset with ID {asset_id} not found"
+            )
 
         try:
-
-            created_tags: List[AssetTag] = []
+            created_tags = []
 
             for tag in tags:
 
-                # Check whether tag already exists
-                existing_tag_query = select(
+                existing_query = select(
                     AssetTag
                 ).where(
                     AssetTag.asset_id == asset_id,
@@ -207,24 +243,20 @@ class AssetRepository:
                 )
 
                 existing_tag = db.session.execute(
-                    existing_tag_query
+                    existing_query
                 ).scalar_one_or_none()
 
                 if existing_tag:
 
-                    # Skip already active tags
                     if existing_tag.status == "Active":
                         continue
 
-                    # Reactivate previously deactivated tag
                     existing_tag.status = "Active"
                     existing_tag.updatedBy = "system"
 
                     created_tags.append(existing_tag)
 
                 else:
-
-                    # Create a new tag
                     asset_tag = AssetTag(
                         asset_id=asset_id,
                         tag=tag,
@@ -234,12 +266,14 @@ class AssetRepository:
                     )
 
                     db.session.add(asset_tag)
-
                     created_tags.append(asset_tag)
 
             db.session.commit()
 
-            return created_tags
+            return [
+                self._tag_to_domain(tag)
+                for tag in created_tags
+            ]
 
         except IntegrityError as exc:
             db.session.rollback()
@@ -252,12 +286,15 @@ class AssetRepository:
             db.session.rollback()
             raise
 
+   
+    def get_tags(self, asset_id: int) -> List[AssetTagData]:
 
-    # 8. Get Active Asset Tags
-    def get_tags(self, asset_id: int) -> List[AssetTag]:
+        asset = db.session.get(Asset, asset_id)
 
-        # Ensure parent asset is active
-        self.get_by_id(asset_id)
+        if asset is None or asset.status != "Active":
+            raise AssetNotFoundError(
+                f"Active asset with ID {asset_id} not found"
+            )
 
         query = select(AssetTag).where(
             AssetTag.asset_id == asset_id,
@@ -266,4 +303,9 @@ class AssetRepository:
 
         result = db.session.execute(query)
 
-        return list(result.scalars().all())
+        tags = result.scalars().all()
+
+        return [
+            self._tag_to_domain(tag)
+            for tag in tags
+        ]
