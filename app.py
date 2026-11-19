@@ -50,7 +50,7 @@ def handle_duplicate_asset(error):
         "success": False,
         "error": "DuplicateAssetError",
         "message": str(error)
-    }), 400
+    }), 409
 
 
 # 3. Handle Other Asset Errors
