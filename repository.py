@@ -1,5 +1,5 @@
 
-from typing import Optional, List
+from typing import Optional, List, cast
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -44,11 +44,11 @@ class AssetRepository:
             updatedBy=asset.updatedBy,
             status=asset.status,
 
-            tags=[
-                self._tag_to_domain(tag)
-                for tag in asset.tags
-                if tag.status == "Active"
-            ]
+           tags=[
+            self._tag_to_domain(tag)
+            for tag in cast(List[AssetTag], asset.tags)
+            if tag.status == "Active"
+        ]
         )
 
 
@@ -200,7 +200,7 @@ class AssetRepository:
             asset.status = "Inactive"
             asset.updatedBy = "system"
 
-            for tag in asset.tags:
+            for tag in cast(List[AssetTag], asset.tags):
 
                 if tag.status == "Active":
                     tag.status = "Inactive"
